@@ -1,0 +1,780 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Dark Gold Luxury Design Tokens */
+  --color-bg: #0a0b10;
+  --color-surface: #12141c;
+  --color-surface-elevated: #191c26;
+  --color-surface-glass: rgba(18, 20, 28, 0.82);
+  --color-border: rgba(212, 175, 55, 0.22);
+  --color-border-glow: rgba(212, 175, 55, 0.55);
+  --color-text: #f5f3ef;
+  --color-text-muted: #a39d91;
+  
+  --color-gold: #d4af37;
+  --color-gold-light: #f9e79f;
+  --color-gold-dark: #996515;
+  --color-gold-gradient: linear-gradient(135deg, #f6d365 0%, #d4af37 50%, #996515 100%);
+  --color-gold-gradient-soft: linear-gradient(135deg, rgba(212, 175, 55, 0.18) 0%, rgba(153, 101, 21, 0.06) 100%);
+  
+  --color-primary: #d4af37;
+  --color-primary-hover: #e6c35c;
+  --color-primary-dark: #996515;
+  --color-success: #10b981;
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
+  --radius: 12px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+
+  /* 3D Depth & Perspective Tokens */
+  --perspective-default: 1200px;
+  --perspective-deep: 1600px;
+  --perspective-shallow: 800px;
+  
+  --shadow-3d-sm: 0 4px 10px rgba(0, 0, 0, 0.4), 0 0 10px rgba(212, 175, 55, 0.05), 0 1px 0 0 rgba(212, 175, 55, 0.2) inset;
+  --shadow-3d-md: 0 12px 30px rgba(0, 0, 0, 0.55), 0 0 20px rgba(212, 175, 55, 0.08), 0 1px 0 0 rgba(212, 175, 55, 0.28) inset;
+  --shadow-3d-lg: 0 24px 44px rgba(0, 0, 0, 0.7), 0 0 32px rgba(212, 175, 55, 0.15), 0 1px 1px 0 rgba(212, 175, 55, 0.35) inset;
+  --shadow-3d-float: 0 28px 50px rgba(0, 0, 0, 0.75), 0 0 40px rgba(212, 175, 55, 0.2), 0 1px 1px 0 rgba(212, 175, 55, 0.4) inset;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  overflow-x: hidden;
+  perspective: var(--perspective-deep);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Luxury Gold Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0d0f15;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2618;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #d4af37;
+}
+
+/* Text Selection */
+::selection {
+  background: #d4af37;
+  color: #0b0c10;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Typography Gradient Utilities */
+.text-gradient-gold {
+  background: linear-gradient(135deg, #fff2cc 0%, #d4af37 55%, #996515 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ==========================================================================
+   3D PERSPECTIVE & TRANSFORM PRIMITIVES
+   ========================================================================== */
+
+.perspective-stage {
+  perspective: var(--perspective-default);
+  perspective-origin: center center;
+  transform-style: preserve-3d;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* 3D Page Viewport for Dynamic Route Transitions */
+.perspective-page-viewport {
+  perspective: var(--perspective-default);
+  transform-style: preserve-3d;
+  animation: perspectiveSlideIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes perspectiveSlideIn {
+  0% {
+    opacity: 0;
+    transform: perspective(1200px) translate3d(0, 20px, -50px) rotateX(3deg);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1200px) translate3d(0, 0, 0) rotateX(0deg);
+  }
+}
+
+/* ==========================================================================
+   3D KEYFRAME ANIMATIONS
+   ========================================================================== */
+
+/* Gentle Floating Levitation - Pure Transform without Rectangular Box Shadow */
+@keyframes float3D {
+  0%, 100% {
+    transform: perspective(1000px) translate3d(0, 0px, 0px) rotateX(0deg) rotateY(0deg);
+  }
+  50% {
+    transform: perspective(1000px) translate3d(0, -8px, 14px) rotateX(2deg) rotateY(-1.5deg);
+  }
+}
+
+/* Shake Animation for Invalid Credentials & Form Validation */
+@keyframes errorShake {
+  0%, 100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  15% {
+    transform: translateX(-12px) rotate(-1.2deg);
+  }
+  30% {
+    transform: translateX(10px) rotate(1.2deg);
+  }
+  45% {
+    transform: translateX(-8px) rotate(-0.8deg);
+  }
+  60% {
+    transform: translateX(6px) rotate(0.8deg);
+  }
+  75% {
+    transform: translateX(-4px) rotate(-0.4deg);
+  }
+  90% {
+    transform: translateX(2px) rotate(0deg);
+  }
+}
+
+.animate-error-shake {
+  animation: errorShake 0.55s cubic-bezier(0.36, 0.07, 0.19, 0.97) both !important;
+}
+
+/* 3D Rotational Wobble for Brand Shields & Medallions */
+@keyframes rotate3DWobble {
+  0%, 100% {
+    transform: perspective(600px) rotateY(-10deg) rotateX(6deg) translateZ(8px);
+  }
+  50% {
+    transform: perspective(600px) rotateY(12deg) rotateX(-5deg) translateZ(14px);
+  }
+}
+
+/* 3D Coin Flip / Badge Flip */
+@keyframes coinFlip3D {
+  0% {
+    transform: perspective(800px) rotateY(0deg) scale3d(0.85, 0.85, 0.85);
+    opacity: 0;
+  }
+  50% {
+    transform: perspective(800px) rotateY(180deg) scale3d(1.15, 1.15, 1.15);
+  }
+  100% {
+    transform: perspective(800px) rotateY(360deg) scale3d(1, 1, 1);
+    opacity: 1;
+  }
+}
+
+/* 3D Pulse Depth for Telemetry */
+@keyframes pulse3DDepth {
+  0%, 100% {
+    transform: scale3d(1, 1, 1) translateZ(0);
+    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.5);
+  }
+  50% {
+    transform: scale3d(1.06, 1.06, 1.06) translateZ(10px);
+    box-shadow: 0 0 18px 4px rgba(212, 175, 55, 0.35);
+  }
+}
+
+/* 3D Hangtag Pendulum Sway */
+@keyframes hangtagSway3D {
+  0%, 100% {
+    transform: perspective(900px) rotateZ(-3deg) rotateY(-8deg) rotateX(4deg);
+  }
+  50% {
+    transform: perspective(900px) rotateZ(3deg) rotateY(8deg) rotateX(-3deg);
+  }
+}
+
+/* Specular Sheen Sweep */
+@keyframes specularShineSweep {
+  0% {
+    transform: translateX(-150%) skewX(-25deg);
+  }
+  100% {
+    transform: translateX(250%) skewX(-25deg);
+  }
+}
+
+/* 3D Pop Entry */
+@keyframes pop3D {
+  0% {
+    opacity: 0;
+    transform: perspective(1000px) scale3d(0.7, 0.7, 0.7) translateZ(-80px) rotateX(-15deg);
+  }
+  70% {
+    transform: perspective(1000px) scale3d(1.04, 1.04, 1.04) translateZ(15px) rotateX(2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1000px) scale3d(1, 1, 1) translateZ(0) rotateX(0deg);
+  }
+}
+
+/* Thermal Receipt Paper Unrolling */
+@keyframes thermalRoll3D {
+  0% {
+    opacity: 0;
+    transform: perspective(1200px) rotateX(-50deg) translateY(-40px) scale3d(0.9, 0.9, 0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1200px) rotateX(0deg) translateY(0) scale3d(1, 1, 1);
+  }
+}
+
+/* ==========================================================================
+   TACTILE 3D BUTTONS (Extruded Physical Depression)
+   ========================================================================== */
+
+.btn-3d {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  user-select: none;
+  transform: translate3d(0, 0, 0);
+  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.12s ease, background 0.15s ease;
+  will-change: transform, box-shadow;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-3d:active {
+  transform: translate3d(0, 3px, 0) !important;
+}
+
+/* 3D Primary & Gold Button (Metallic Gold) */
+.btn-3d-primary,
+.btn-3d-gold {
+  background: linear-gradient(180deg, #f7df8f 0%, #d4af37 55%, #b38210 100%);
+  color: #0d0f15;
+  border-color: #ffd700;
+  box-shadow: 0 4px 0 #785507, 0 8px 18px rgba(212, 175, 55, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+.btn-3d-primary:hover,
+.btn-3d-gold:hover {
+  transform: translate3d(0, -2px, 6px);
+  background: linear-gradient(180deg, #fff0ba 0%, #e5c158 55%, #c59114 100%);
+  box-shadow: 0 6px 0 #785507, 0 12px 24px rgba(212, 175, 55, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+.btn-3d-primary:active,
+.btn-3d-gold:active {
+  box-shadow: 0 1px 0 #785507, 0 3px 6px rgba(212, 175, 55, 0.3), inset 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* 3D Dark Obsidian Button with Gold Trims */
+.btn-3d-dark {
+  background: linear-gradient(180deg, #1b1e2a 0%, #12141c 100%);
+  color: #d4af37;
+  border-color: rgba(212, 175, 55, 0.35);
+  box-shadow: 0 4px 0 #090a0f, 0 8px 16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(212, 175, 55, 0.2);
+}
+.btn-3d-dark:hover {
+  transform: translate3d(0, -2px, 6px);
+  background: linear-gradient(180deg, #242838 0%, #161924 100%);
+  border-color: rgba(212, 175, 55, 0.6);
+  box-shadow: 0 6px 0 #090a0f, 0 12px 22px rgba(212, 175, 55, 0.15), inset 0 1px 0 rgba(212, 175, 55, 0.35);
+}
+.btn-3d-dark:active {
+  box-shadow: 0 1px 0 #090a0f, 0 3px 6px rgba(0, 0, 0, 0.4), inset 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* 3D Success Button (Emerald with Gold trim) */
+.btn-3d-success {
+  background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  border-color: #047857;
+  box-shadow: 0 4px 0 #064e3b, 0 8px 16px rgba(16, 185, 129, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.btn-3d-success:hover {
+  transform: translate3d(0, -2px, 6px);
+  background: linear-gradient(180deg, #34d399 0%, #059669 100%);
+  box-shadow: 0 6px 0 #064e3b, 0 12px 20px rgba(16, 185, 129, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.btn-3d-success:active {
+  box-shadow: 0 1px 0 #064e3b, 0 3px 6px rgba(16, 185, 129, 0.25), inset 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 3D Danger Button (Crimson Ruby) */
+.btn-3d-danger {
+  background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+  color: #ffffff;
+  border-color: #b91c1c;
+  box-shadow: 0 4px 0 #7f1d1d, 0 8px 16px rgba(220, 38, 38, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.btn-3d-danger:hover {
+  transform: translate3d(0, -2px, 6px);
+  background: linear-gradient(180deg, #f87171 0%, #dc2626 100%);
+  box-shadow: 0 6px 0 #7f1d1d, 0 12px 20px rgba(220, 38, 38, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.btn-3d-danger:active {
+  box-shadow: 0 1px 0 #7f1d1d, 0 3px 6px rgba(220, 38, 38, 0.25), inset 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 3D Light / Ghost Button (Dark Gold outline) */
+.btn-3d-light {
+  background: linear-gradient(180deg, #181b26 0%, #10121a 100%);
+  color: #e5e7eb;
+  border-color: rgba(212, 175, 55, 0.25);
+  box-shadow: 0 3px 0 #0b0c10, 0 6px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.btn-3d-light:hover {
+  transform: translate3d(0, -2px, 4px);
+  color: #d4af37;
+  border-color: rgba(212, 175, 55, 0.5);
+  box-shadow: 0 5px 0 #0b0c10, 0 10px 18px rgba(212, 175, 55, 0.12), inset 0 1px 0 rgba(212, 175, 55, 0.2);
+}
+.btn-3d-light:active {
+  box-shadow: 0 1px 0 #0b0c10, 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* ==========================================================================
+   3D CARDS & CONTAINERS (Dark Gold)
+   ========================================================================== */
+
+.card-3d {
+  background: linear-gradient(135deg, rgba(20, 23, 33, 0.94) 0%, rgba(13, 15, 22, 0.98) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-3d-md);
+  transform: perspective(1000px) translate3d(0, 0, 0);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+  position: relative;
+  color: var(--color-text);
+}
+
+.card-3d-interactive:hover {
+  transform: perspective(1000px) translate3d(0, -6px, 16px) rotateX(1.5deg);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 28px rgba(212, 175, 55, 0.2), inset 0 1px 0 rgba(212, 175, 55, 0.4);
+  border-color: rgba(212, 175, 55, 0.55);
+  z-index: 5;
+}
+
+/* 3D Glassmorphic Card in Dark Gold */
+.card-3d-glass {
+  background: rgba(18, 20, 28, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  box-shadow: var(--shadow-3d-md);
+  border-radius: var(--radius);
+  color: var(--color-text);
+}
+
+/* 3D Floating Element */
+.floating-3d {
+  animation: float3D 4s infinite ease-in-out;
+}
+
+/* 3D Wobbling Element */
+.wobble-3d {
+  animation: rotate3DWobble 5s infinite ease-in-out;
+}
+
+/* ==========================================================================
+   3D TABLE ROW HOVER DEPTH (Dark Gold)
+   ========================================================================== */
+
+.table-row-3d {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  position: relative;
+  background-color: transparent;
+}
+.table-row-3d:hover {
+  transform: perspective(1000px) translate3d(0, -2px, 6px);
+  background-color: rgba(212, 175, 55, 0.08) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 12px rgba(212, 175, 55, 0.1);
+  z-index: 4;
+}
+
+/* ==========================================================================
+   3D STATUS BADGES (Gold Foil & Jewels)
+   ========================================================================== */
+
+.badge-3d {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transform: translate3d(0, 0, 0);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.badge-3d-gold {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(153, 101, 21, 0.3) 100%);
+  color: #f7df8f;
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 10px rgba(212, 175, 55, 0.2), inset 0 1px 0 rgba(255, 240, 180, 0.4);
+}
+
+/* ==========================================================================
+   DARK GOLD FORM INPUTS
+   ========================================================================== */
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+select,
+textarea {
+  color: #f5f3ef;
+  background-color: #141722;
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: #d4af37 !important;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.25) !important;
+  background-color: #181b28 !important;
+}
+
+/* ==========================================================================
+   ACCESSIBILITY & REDUCED MOTION
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==========================================================================
+   AUTHENTICATION: REEL-MATCHED EMBOSSED 3D CIRCLE DESIGN SYSTEM
+   ========================================================================== */
+
+.login-page-root,
+.register-page-root {
+  min-height: 100vh;
+  width: 100%;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative;
+  overflow: hidden;
+  background: #070709;
+  color: #ffffff;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.login-circle {
+  width: 440px !important;
+  max-width: 92vw !important;
+  aspect-ratio: 1 / 1 !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 40px 32px !important;
+  position: relative !important;
+  box-sizing: border-box !important;
+  background: radial-gradient(circle at 35% 35%, #1a1d29 0%, #10121a 60%, #07080c 100%) !important;
+  box-shadow: 25px 25px 65px rgba(0,0,0,0.95), -12px -12px 45px rgba(212,175,55,0.18), inset 2px 2px 4px rgba(255,235,170,0.35) !important;
+  border: 2px solid rgba(212, 175, 55, 0.45) !important;
+}
+
+.register-circle {
+  width: 550px !important;
+  max-width: 95vw !important;
+  min-height: 550px !important;
+  border-radius: 48px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 38px 28px !important;
+  position: relative !important;
+  box-sizing: border-box !important;
+  background: radial-gradient(circle at 35% 35%, #1a1d29 0%, #10121a 60%, #07080c 100%) !important;
+  box-shadow: 25px 25px 65px rgba(0,0,0,0.95), -12px -12px 45px rgba(212,175,55,0.18), inset 2px 2px 4px rgba(255,235,170,0.35) !important;
+  border: 2px solid rgba(212, 175, 55, 0.45) !important;
+}
+
+@media (min-width: 640px) {
+  .register-circle {
+    border-radius: 50% !important;
+    aspect-ratio: 1 / 1 !important;
+    padding: 44px 36px !important;
+  }
+}
+
+.form-content {
+  width: 100% !important;
+  max-width: 310px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 14px !important;
+  z-index: 10 !important;
+  box-sizing: border-box !important;
+}
+
+.register-circle .form-content {
+  max-width: 390px !important;
+  gap: 12px !important;
+}
+
+.form-content h2 {
+  margin: 0 !important;
+  font-size: 28px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+  background: linear-gradient(135deg, #fff2cc 0%, #d4af37 55%, #b38728 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  text-align: center !important;
+}
+
+.form-content p.hint {
+  margin: 0 !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.05em !important;
+  color: rgba(212, 175, 55, 0.85) !important;
+  text-align: center !important;
+}
+
+.input-group {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  background: #090a0f !important;
+  border-radius: 9999px !important;
+  padding: 8px 14px !important;
+  box-shadow: inset 3px 3px 8px rgba(0,0,0,0.95), inset -2px -2px 6px rgba(212,175,55,0.08) !important;
+  border: 1px solid rgba(212, 175, 55, 0.3) !important;
+  transition: all 0.2s ease !important;
+  box-sizing: border-box !important;
+}
+
+.input-group:focus-within {
+  border-color: rgba(212, 175, 55, 0.9) !important;
+  box-shadow: inset 3px 3px 8px rgba(0,0,0,0.9), inset -2px -2px 6px rgba(212,175,55,0.15), 0 0 16px rgba(212,175,55,0.35) !important;
+}
+
+.input-group input,
+.input-group select {
+  width: 100% !important;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  color: #ffffff !important;
+  padding: 2px 8px !important;
+  font-size: 13px !important;
+  font-family: inherit !important;
+  box-shadow: none !important;
+}
+
+.input-group input::placeholder {
+  color: #6b7280 !important;
+}
+
+/* Chrome/Edge autofill override for Dark Gold aesthetic */
+.input-group input:-webkit-autofill,
+.input-group input:-webkit-autofill:hover,
+.input-group input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #ffffff !important;
+  -webkit-box-shadow: 0 0 0px 1000px #090a0f inset !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+}
+
+.btn-submit {
+  width: 100% !important;
+  padding: 11px 20px !important;
+  border-radius: 9999px !important;
+  border: none !important;
+  background: linear-gradient(135deg, #fce08b 0%, #d4af37 50%, #996515 100%) !important;
+  box-shadow: 0 4px 0 #785310, 0 10px 25px rgba(212, 175, 55, 0.35) !important;
+  font-weight: 900 !important;
+  font-size: 12px !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: #0b0c10 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  margin-top: 4px !important;
+}
+
+.btn-submit:hover:not(:disabled) {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 0 #785310, 0 14px 30px rgba(212, 175, 55, 0.45) !important;
+}
+
+.btn-submit:active:not(:disabled) {
+  transform: translateY(2px) !important;
+  box-shadow: 0 2px 0 #785310, 0 6px 15px rgba(212, 175, 55, 0.3) !important;
+}
+
+.check-circle {
+  width: 80px !important;
+  height: 80px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: radial-gradient(circle at 35% 35%, #181c24 0%, #0d0f15 100%) !important;
+  box-shadow: inset 4px 4px 10px rgba(0,0,0,0.9), inset -3px -3px 8px rgba(212,175,55,0.2), 0 0 35px rgba(16,185,129,0.45) !important;
+  border: 2.5px solid #10b981 !important;
+  color: #10b981 !important;
+}
+
+.success-msg {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  gap: 14px !important;
+  z-index: 10 !important;
+}
+
+.success-msg h2 {
+  margin: 0 !important;
+  font-size: 28px !important;
+  font-weight: 900 !important;
+  background: linear-gradient(135deg, #ffffff 0%, #fef3c7 40%, #d4af37 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.success-msg p {
+  margin: 0 !important;
+  font-size: 13px !important;
+  color: #d1d5db !important;
+  font-weight: 500 !important;
+}
+
+/* ==========================================================================
+   RESPONSIVE MOBILE ARCHITECTURE & DRAWER NAVIGATION
+   ========================================================================== */
+
+@media (max-width: 1023px) {
+  .app-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    width: 280px !important;
+    max-width: 85vw !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    z-index: 50 !important;
+    box-shadow: 10px 0 35px rgba(0, 0, 0, 0.85) !important;
+  }
+
+  .app-sidebar.mobile-open {
+    transform: translateX(0) !important;
+  }
+
+  .mobile-hamburger-btn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 10px !important;
+    background: rgba(212, 175, 55, 0.1) !important;
+    border: 1px solid rgba(212, 175, 55, 0.3) !important;
+    color: #d4af37 !important;
+    cursor: pointer !important;
+  }
+
+  .app-top-navbar {
+    padding: 0 1rem !important;
+  }
+
+  .app-content-area {
+    padding: 1rem !important;
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .hide-on-mobile {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-sidebar {
+    position: static !important;
+    transform: none !important;
+  }
+
+  .mobile-hamburger-btn {
+    display: none !important;
+  }
+
+  .mobile-close-btn {
+    display: none !important;
+  }
+}
+
+/* Mobile Touch Scroll Smoothing & Responsive Insets */
+.mobile-touch-scroll,
+.overflow-x-auto,
+[style*="overflow-x: auto"],
+[style*="overflowX: auto"] {
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior-x: contain !important;
+}
+
+/* Ensure mobile buttons have minimum touch target sizes */
+@media (max-width: 768px) {
+  button, a, input, select {
+    touch-action: manipulation;
+  }
+}
+
