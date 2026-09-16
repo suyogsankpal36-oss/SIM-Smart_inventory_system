@@ -6,7 +6,7 @@ Write-Host "=========================================================" -Foregrou
 Write-Host "   Starting Smart Inventory System (Fullstack Dev)" -ForegroundColor Cyan
 Write-Host "=========================================================" -ForegroundColor Cyan
 Write-Host "Backend:  http://127.0.0.1:8000/" -ForegroundColor Green
-Write-Host "Admin:    http://127.0.0.1:8000/admin/ (admin / admin123)" -ForegroundColor Green
+Write-Host "Admin:    http://127.0.0.1:8000/admin/" -ForegroundColor Green
 Write-Host "Frontend: http://localhost:5173/" -ForegroundColor Green
 Write-Host ""
 
