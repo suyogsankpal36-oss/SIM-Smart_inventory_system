@@ -1,0 +1,22 @@
+﻿{
+  "name": "smart-inventory-system",
+  "version": "1.0.0",
+  "description": "Smart Business & Inventory Management System (Django REST + React Vite)",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "preview": "npm --prefix frontend run preview",
+    "lint": "npm --prefix frontend run lint"
+  },
+  "keywords": [
+    "inventory",
+    "pos",
+    "django",
+    "react",
+    "vite",
+    "business-management"
+  ],
+  "author": "suyogsankpal36-oss",
+  "license": "MIT"
+}
