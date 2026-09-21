@@ -193,15 +193,29 @@ CORS_ALLOWED_ORIGINS = [origin.strip() for origin in raw_cors.split(",") if orig
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^http://localhost:\d+$",
     r"^http://127\.0\.0\.1:\d+$",
+    r"^https://.*\.netlify\.app$",
+    r"^https://.*\.vercel\.app$",
+    r"^https://.*\.onrender\.com$",
 ]
 CORS_ALLOW_CREDENTIALS = True
+CORS_PREFLIGHT_MAX_AGE = 86400
+
+if os.getenv("CORS_ALLOW_ALL_ORIGINS", "False").lower() in ("true", "1", "yes"):
+    CORS_ALLOW_ALL_ORIGINS = True
 
 # CSRF trusted origins (derived from CORS origins by default, plus optional CSRF_TRUSTED_ORIGINS env)
+default_csrf_trusted = [
+    "https://*.netlify.app",
+    "https://*.vercel.app",
+    "https://*.onrender.com",
+    "http://localhost:*",
+    "http://127.0.0.1:*",
+]
 raw_csrf = os.getenv("CSRF_TRUSTED_ORIGINS", "")
 if raw_csrf:
-    CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in raw_csrf.split(",") if origin.strip()]
+    CSRF_TRUSTED_ORIGINS = default_csrf_trusted + [origin.strip() for origin in raw_csrf.split(",") if origin.strip()]
 else:
-    CSRF_TRUSTED_ORIGINS = list(CORS_ALLOWED_ORIGINS)
+    CSRF_TRUSTED_ORIGINS = default_csrf_trusted + list(CORS_ALLOWED_ORIGINS)
 
 # ---------------------------------------------------------------------------
 # I18N / TZ
