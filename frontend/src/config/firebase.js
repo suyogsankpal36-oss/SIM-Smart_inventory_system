@@ -8,13 +8,13 @@ import {
 } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCKe_dNIdNRAJwxNKf1MP9wt1NeXYUffAE",
-  authDomain: "smart-ims-e6bcf.firebaseapp.com",
-  projectId: "smart-ims-e6bcf",
-  storageBucket: "smart-ims-e6bcf.firebasestorage.app",
-  messagingSenderId: "321770080573",
-  appId: "1:321770080573:web:65e4505750ca21141a5d54",
-  measurementId: "G-P7GMDYG6XK",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyCKe_dNIdNRAJwxNKf1MP9wt1NeXYUffAE",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "smart-ims-e6bcf.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "smart-ims-e6bcf",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "smart-ims-e6bcf.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "321770080573",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:321770080573:web:65e4505750ca21141a5d54",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-P7GMDYG6XK",
 };
 
 // Initialize Firebase App singleton

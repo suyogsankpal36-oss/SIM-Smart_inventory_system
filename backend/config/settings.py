@@ -231,15 +231,17 @@ STORAGES = {
 # ---------------------------------------------------------------------------
 # Production Security Hardening
 # ---------------------------------------------------------------------------
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 if not DEBUG:
-    SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "False").lower() in ("true", "1", "yes")
-    SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "True" if SECURE_SSL_REDIRECT else "False").lower() in ("true", "1", "yes")
-    CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", "True" if SECURE_SSL_REDIRECT else "False").lower() in ("true", "1", "yes")
+    SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "True").lower() in ("true", "1", "yes")
+    SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "True").lower() in ("true", "1", "yes")
+    CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", "True").lower() in ("true", "1", "yes")
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = os.getenv("X_FRAME_OPTIONS", "DENY")
     
-    hsts_sec = int(os.getenv("SECURE_HSTS_SECONDS", "31536000" if SECURE_SSL_REDIRECT else "0"))
+    hsts_sec = int(os.getenv("SECURE_HSTS_SECONDS", "31536000"))
     if hsts_sec > 0:
         SECURE_HSTS_SECONDS = hsts_sec
         SECURE_HSTS_INCLUDE_SUBDOMAINS = os.getenv("SECURE_HSTS_INCLUDE_SUBDOMAINS", "True").lower() in ("true", "1", "yes")

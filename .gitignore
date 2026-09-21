@@ -6,6 +6,13 @@
 *.key
 *.cert
 *.crt
+*.pfx
+*credentials*.json
+client_secret*.json
+service-account*.json
+id_rsa*
+*.sql
+*.dump
 
 # Python & Django
 __pycache__/
