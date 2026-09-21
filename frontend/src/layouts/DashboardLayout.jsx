@@ -16,6 +16,7 @@ import {
   Settings,
   Shield,
   ShoppingCart,
+  Sparkles,
   TrendingUp,
   Truck,
   User,
@@ -234,6 +235,16 @@ export default function DashboardLayout() {
             </div>
 
             <NotificationDropdown />
+
+            {(user?.is_guest_demo || user?.username === "guest_demo") && (
+              <div
+                title="You are browsing in Live Guest Demo mode with full executive privileges unlocked."
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide bg-gradient-to-r from-amber-500/20 via-[#d4af37]/30 to-amber-500/20 border border-[#d4af37]/50 text-amber-200 shadow-[0_0_12px_rgba(212,175,55,0.25)]"
+              >
+                <Sparkles size={12} className="text-[#d4af37] animate-pulse" />
+                <span>Guest Demo</span>
+              </div>
+            )}
 
             <div style={styles.navUserGreeting} className="badge-3d-gold">
               <User size={15} color="#d4af37" />

@@ -32,6 +32,18 @@ class AccountsAuthTests(APITestCase):
         self.me_url = reverse("auth-profile")
         self.change_password_url = reverse("auth-change-password")
         self.users_url = reverse("user-management-list")
+        self.guest_demo_url = reverse("auth-guest-demo")
+
+    def test_guest_demo_login(self):
+        """Verify 1-click live guest demo issues valid JWT tokens and admin privileges."""
+        res = self.client.post(self.guest_demo_url)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn("access", res.data)
+        self.assertIn("refresh", res.data)
+        self.assertIn("user", res.data)
+        self.assertEqual(res.data["user"]["username"], "guest_demo")
+        self.assertEqual(res.data["user"]["role"], "admin")
+        self.assertTrue(res.data.get("is_guest_demo"))
 
     def test_login_with_username(self):
         payload = {"username": "adminuser", "password": "AdminPassword123!"}

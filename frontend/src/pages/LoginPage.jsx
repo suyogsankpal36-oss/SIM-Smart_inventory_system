@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Check, Eye, EyeOff, Lock, Mail, ShieldAlert, User } from "lucide-react";
+import { Check, Eye, EyeOff, Lock, Mail, ShieldAlert, Sparkles, User } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import Scene3DBackground from "../components/3d/Scene3DBackground";
 import Tilt3D from "../components/3d/Tilt3D";
@@ -16,7 +16,7 @@ export default function LoginPage() {
   const [loginSuccess, setLoginSuccess] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
 
-  const { login } = useAuth();
+  const { login, loginAsGuest } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -64,6 +64,25 @@ export default function LoginPage() {
       ) {
         detail = "Invalid username or password. Please try again.";
       }
+      setError(detail);
+      triggerShake();
+      setSubmitting(false);
+    }
+  };
+
+  const handleGuestDemo = async () => {
+    setError("");
+    setSubmitting(true);
+    try {
+      await loginAsGuest();
+      setLoginSuccess(true);
+      setTimeout(() => {
+        navigate(from, { replace: true });
+      }, 1250);
+    } catch (err) {
+      let detail =
+        err.response?.data?.detail ||
+        "Unable to start live guest demo. Please verify the backend is running.";
       setError(detail);
       triggerShake();
       setSubmitting(false);
@@ -362,6 +381,20 @@ export default function LoginPage() {
                     triggerShake();
                   }}
                 />
+
+                {/* 1-Click Live Guest Demo Access Button */}
+                <button
+                  type="button"
+                  id="guest-demo-btn"
+                  disabled={submitting}
+                  onClick={handleGuestDemo}
+                  className="w-full py-2 px-3 rounded-full text-xs font-bold text-amber-200 bg-gradient-to-r from-amber-500/15 via-[#d4af37]/25 to-amber-500/15 hover:from-amber-500/30 hover:via-[#d4af37]/40 hover:to-amber-500/30 border border-[#d4af37]/40 hover:border-[#d4af37] shadow-[0_0_12px_rgba(212,175,55,0.15)] hover:shadow-[0_0_20px_rgba(212,175,55,0.35)] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                  title="Explore all modules instantly with full executive demo privileges"
+                >
+                  <Sparkles size={13} className="text-[#d4af37] animate-pulse" />
+                  <span>Live Guest Demo</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#d4af37]/30 text-amber-100 border border-[#d4af37]/40 font-mono">1-Click</span>
+                </button>
               </form>
 
               <div className="text-[11px] text-neutral-400 text-center">

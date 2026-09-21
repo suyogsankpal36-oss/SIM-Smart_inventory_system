@@ -172,6 +172,56 @@ class GoogleLoginView(generics.GenericAPIView):
         )
 
 
+class GuestDemoLoginView(generics.GenericAPIView):
+    """
+    POST /api/auth/guest-demo/
+    Instant 1-click live demo guest access.
+    Issues JWT tokens for a dedicated executive demo guest account with administrative
+    privileges so reviewers can explore all modules without entering credentials.
+    """
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        guest_user = User.objects.filter(username="guest_demo").first()
+        if not guest_user:
+            guest_user = User.objects.create_user(
+                username="guest_demo",
+                email="guest@smartinventory.io",
+                first_name="Guest",
+                last_name="Explorer",
+                role=User.Role.ADMIN,
+                is_active=True,
+            )
+            guest_user.set_password("guest123")
+            guest_user.save()
+        else:
+            if not guest_user.is_active or guest_user.role != User.Role.ADMIN:
+                guest_user.is_active = True
+                guest_user.role = User.Role.ADMIN
+                guest_user.save()
+
+        # Issue full JWT tokens
+        refresh = RefreshToken.for_user(guest_user)
+        refresh["email"] = guest_user.email
+        refresh["role"] = guest_user.role
+        refresh["username"] = guest_user.username
+        refresh["is_guest_demo"] = True
+
+        user_data = UserSerializer(guest_user).data
+        user_data["is_guest_demo"] = True
+
+        return Response(
+            {
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+                "user": user_data,
+                "is_guest_demo": True,
+                "message": "Live guest demo access granted with full privileges.",
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
 class LogoutView(generics.GenericAPIView):
     """
     POST /api/auth/logout/

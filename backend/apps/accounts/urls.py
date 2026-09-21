@@ -6,6 +6,7 @@ from .views import (
     ChangePasswordView,
     CustomTokenObtainPairView,
     GoogleLoginView,
+    GuestDemoLoginView,
     LogoutView,
     RegisterView,
     UserProfileView,
@@ -19,6 +20,7 @@ urlpatterns = [
     # Authentication & JWT
     path("login/", CustomTokenObtainPairView.as_view(), name="auth-login"),
     path("google/", GoogleLoginView.as_view(), name="auth-google"),
+    path("guest-demo/", GuestDemoLoginView.as_view(), name="auth-guest-demo"),
     path("refresh/", TokenRefreshView.as_view(), name="auth-refresh"),
     path("register/", RegisterView.as_view(), name="auth-register"),
     path("logout/", LogoutView.as_view(), name="auth-logout"),

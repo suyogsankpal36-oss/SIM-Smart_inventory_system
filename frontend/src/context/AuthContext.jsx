@@ -138,6 +138,16 @@ export function AuthProvider({ children }) {
     return userData;
   };
 
+  const loginAsGuest = async () => {
+    const response = await api.post("/auth/guest-demo/");
+    const { access, refresh, user: userData } = response.data;
+    localStorage.setItem("access_token", access);
+    localStorage.setItem("refresh_token", refresh);
+    localStorage.setItem("user", JSON.stringify(userData));
+    setUser(userData);
+    return userData;
+  };
+
   const register = async (userData) => {
     const response = await api.post("/auth/register/", userData);
     const { access, refresh, user: newUser } = response.data;
@@ -189,6 +199,7 @@ export function AuthProvider({ children }) {
     isEmployee,
     login,
     loginWithGoogle,
+    loginAsGuest,
     register,
     logout,
     updateUser,
