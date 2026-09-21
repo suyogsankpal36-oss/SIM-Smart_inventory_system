@@ -1,4 +1,4 @@
-﻿# Netlify Configuration for Smart Inventory System (Vite Frontend SPA)
+# Netlify Configuration for Smart Inventory System (Vite Frontend SPA)
 
 [build]
   base = "frontend"
