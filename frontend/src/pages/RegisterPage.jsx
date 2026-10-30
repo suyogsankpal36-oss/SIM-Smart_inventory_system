@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Check, Eye, EyeOff, Lock, Mail, Phone, ShieldAlert, User } from "lucide-react";
+import { Check, Eye, EyeOff, Lock, Mail, Phone, ShieldAlert, Sparkles, User } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import Scene3DBackground from "../components/3d/Scene3DBackground";
-import Tilt3D from "../components/3d/Tilt3D";
 import GoogleAuthButton from "../components/GoogleAuthButton";
+import ThemeToggle from "../components/ui/ThemeToggle";
+import { Button, Card, Input, Select } from "../components/ui";
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -77,14 +77,12 @@ export default function RegisterPage() {
 
     setSubmitting(true);
 
-    // Sanitize username: if user or browser autofill placed an email in username, extract username
     let cleanUsername = formData.username.trim();
     if (cleanUsername.includes("@")) {
       cleanUsername = cleanUsername.split("@")[0];
     }
     cleanUsername = cleanUsername.replace(/[^a-zA-Z0-9_.-]/g, "");
 
-    // Sanitize phone: if user or browser autofill placed an email into phone, discard it
     let cleanPhone = formData.phone.trim();
     if (cleanPhone.includes("@") || !/\d/.test(cleanPhone)) {
       cleanPhone = "";
@@ -103,7 +101,7 @@ export default function RegisterPage() {
       setRegisterSuccess(true);
       setTimeout(() => {
         navigate("/login");
-      }, 1500);
+      }, 1200);
     } catch (err) {
       const data = err.response?.data;
       const errorsObj = data?.errors || data || {};
@@ -129,7 +127,7 @@ export default function RegisterPage() {
 
       if (!detail) {
         if (!err.response) {
-          detail = "Cannot connect to server. Please verify the backend API is running on port 8000.";
+          detail = "Cannot connect to server. Please verify the backend API is running.";
         } else {
           detail = "Registration failed. Please review your input or check if this email already exists.";
         }
@@ -140,401 +138,209 @@ export default function RegisterPage() {
     }
   };
 
-
   return (
-    <div className="register-page-root min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden bg-[#070709] text-white">
-      <style>{`
-        .register-page-root {
-          min-height: 100vh;
-          width: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          position: relative;
-          overflow: hidden;
-          background: #070709;
-          color: #ffffff;
-          padding: 16px;
-          box-sizing: border-box;
-        }
-        .register-circle {
-          width: 550px;
-          max-width: 95vw;
-          min-height: 550px;
-          border-radius: 48px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 38px 28px;
-          position: relative;
-          box-sizing: border-box;
-          background: radial-gradient(circle at 35% 35%, #1a1d29 0%, #10121a 60%, #07080c 100%);
-          box-shadow: 25px 25px 65px rgba(0,0,0,0.95), -12px -12px 45px rgba(212,175,55,0.18), inset 2px 2px 4px rgba(255,235,170,0.35);
-          border: 2px solid rgba(212, 175, 55, 0.45);
-        }
-        @media (min-width: 640px) {
-          .register-circle {
-            border-radius: 50%;
-            aspect-ratio: 1 / 1;
-            padding: 44px 36px;
-          }
-        }
-        .form-content {
-          width: 100%;
-          max-width: 390px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 12px;
-          z-index: 10;
-          box-sizing: border-box;
-        }
-        .form-content h2 {
-          margin: 0;
-          font-size: 26px;
-          font-weight: 900;
-          letter-spacing: 0.14em;
-          text-transform: uppercase;
-          background: linear-gradient(135deg, #fff2cc 0%, #d4af37 55%, #b38728 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          text-align: center;
-        }
-        .hint {
-          margin: 0;
-          font-size: 11px;
-          font-weight: 500;
-          letter-spacing: 0.05em;
-          color: rgba(212, 175, 55, 0.85);
-          text-align: center;
-        }
-        .check-circle {
-          width: 80px;
-          height: 80px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: radial-gradient(circle at 35% 35%, #181c24 0%, #0d0f15 100%);
-          box-shadow: inset 4px 4px 10px rgba(0,0,0,0.9), inset -3px -3px 8px rgba(212,175,55,0.2), 0 0 35px rgba(16,185,129,0.45);
-          border: 2.5px solid #10b981;
-          color: #10b981;
-        }
-        .success-msg {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
-          gap: 14px;
-          z-index: 10;
-        }
-        .success-msg h2 {
-          margin: 0;
-          font-size: 28px;
-          font-weight: 900;
-          background: linear-gradient(135deg, #ffffff 0%, #fef3c7 40%, #d4af37 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-        .success-msg p {
-          margin: 0;
-          font-size: 13px;
-          color: #d1d5db;
-          font-weight: 500;
-        }
-        .input-group {
-          width: 100%;
-          display: flex;
-          align-items: center;
-          background: #090a0f;
-          border-radius: 9999px;
-          padding: 6px 12px;
-          box-shadow: inset 3px 3px 8px rgba(0,0,0,0.95), inset -2px -2px 6px rgba(212,175,55,0.08);
-          border: 1px solid rgba(212, 175, 55, 0.3);
-          transition: all 0.2s ease;
-          box-sizing: border-box;
-        }
-        .input-group:focus-within {
-          border-color: rgba(212, 175, 55, 0.9);
-          box-shadow: inset 3px 3px 8px rgba(0,0,0,0.9), inset -2px -2px 6px rgba(212,175,55,0.15), 0 0 16px rgba(212,175,55,0.35);
-        }
-        .input-group input, .input-group select {
-          width: 100%;
-          background: transparent;
-          border: none;
-          outline: none;
-          color: #ffffff;
-          padding: 2px 6px;
-          font-size: 12px;
-          font-family: inherit;
-        }
-        .input-group input::placeholder {
-          color: #6b7280;
-        }
-        .btn-submit {
-          width: 100%;
-          padding: 11px 20px;
-          border-radius: 9999px;
-          border: none;
-          background: linear-gradient(135deg, #fce08b 0%, #d4af37 50%, #996515 100%);
-          box-shadow: 0 4px 0 #785310, 0 10px 25px rgba(212, 175, 55, 0.35);
-          font-weight: 900;
-          font-size: 12px;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #0b0c10;
-          cursor: pointer;
-          transition: all 0.15s ease;
-          margin-top: 4px;
-        }
-        .btn-submit:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 0 #785310, 0 14px 30px rgba(212, 175, 55, 0.45);
-        }
-        .btn-submit:active:not(:disabled) {
-          transform: translateY(2px);
-          box-shadow: 0 2px 0 #785310, 0 6px 15px rgba(212, 175, 55, 0.3);
-        }
-      `}</style>
+    <div className="min-h-screen w-full flex items-center justify-center p-4 relative bg-base-200">
+      {/* Floating Theme Toggle */}
+      <div className="absolute top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
 
-      {/* Ambient Constellation Layer with Metallic Gold Particles */}
-      <Scene3DBackground opacity={0.35} particleCount={40} color="212, 175, 55" />
-
-      {/* Main Embossed Circle Plaque - Strictly Circular Movement */}
-      <Tilt3D
-        intensity={10}
-        glare={false}
-        float={true}
-        className="z-10 relative rounded-full"
-        style={{ borderRadius: "50%" }}
-      >
-        <div
-          id="registerContainer"
-          onAnimationEnd={() => setIsShaking(false)}
-          className={`register-circle login-circle preserve-3d relative transition-all duration-300 ${
-            isShaking
-              ? "animate-error-shake !border-rose-500 shadow-[0_0_45px_rgba(239,68,68,0.55),inset_0_0_20px_rgba(239,68,68,0.25)]"
-              : error
-              ? "!border-rose-500/70 shadow-[0_0_30px_rgba(239,68,68,0.35)]"
-              : ""
-          }`}
-        >
-          {/* Outer Concentric Metallic Rings */}
-          <div className="absolute inset-3.5 rounded-[42px] sm:rounded-full border border-[#d4af37]/20 pointer-events-none" />
-          <div className="absolute inset-5 rounded-[38px] sm:rounded-full border border-dashed border-[#d4af37]/20 pointer-events-none animate-[spin_80s_linear_infinite]" />
+      <div className="w-full max-w-lg">
+        <Card className={`p-6 sm:p-8 border border-base-content/10 shadow-2xl bg-base-100 ${isShaking ? "animate-shake" : ""}`}>
+          {/* Logo & Header */}
+          <div className="text-center mb-6">
+            <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/30 flex items-center justify-center mx-auto mb-3 shadow-md">
+              <Sparkles className="w-7 h-7 text-primary" />
+            </div>
+            <h1 className="text-2xl font-black text-base-content tracking-tight">
+              Create Account
+            </h1>
+            <p className="text-xs text-base-content/60 mt-1">
+              Join Smart Inventory System & Launch Your Workspace
+            </p>
+          </div>
 
           {registerSuccess ? (
-            /* SUCCESS STATE - EXACT MATCH TO USER'S REEL ARCHITECTURE */
-            <div id="successMsg" className="success-msg flex flex-col items-center justify-center text-center space-y-4 animate-in fade-in zoom-in duration-300">
-              {/* Embossed circular well with green checkmark */}
-              <div className="check-circle w-20 h-20 rounded-full flex items-center justify-center text-emerald-400 text-3xl font-black shadow-lg">
-                <Check size={40} strokeWidth={3.5} className="text-emerald-400" />
+            <div className="py-8 text-center space-y-3 animate-in fade-in zoom-in duration-300">
+              <div className="w-16 h-16 rounded-full bg-success/15 border-2 border-success text-success flex items-center justify-center mx-auto shadow-lg">
+                <Check size={32} />
               </div>
-              <div className="space-y-1">
-                <h2 className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-white via-amber-100 to-[#d4af37] bg-clip-text text-transparent tracking-tight">
-                  Welcome Aboard!
-                </h2>
-                <p className="text-xs sm:text-sm text-neutral-300 font-medium tracking-wide">
-                  Account Created Successfully
-                </p>
-              </div>
-              <span className="text-[11px] text-[#d4af37]/80 font-mono animate-pulse">
-                Redirecting to login portal...
-              </span>
+              <h2 className="text-xl font-bold text-base-content">Registration Complete</h2>
+              <p className="text-xs text-base-content/60">
+                Your profile is active. Redirecting to sign in...
+              </p>
             </div>
           ) : (
-            /* REGISTRATION FORM STATE */
-            <div id="formContent" className="form-content w-full max-w-[390px] flex flex-col items-center z-10 space-y-3.5">
-              <div className="text-center space-y-0.5">
-                <h2 className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-amber-100 via-[#d4af37] to-amber-500 bg-clip-text text-transparent tracking-widest uppercase">
-                  SIGN UP
-                </h2>
-                <p className="hint text-[11px] text-[#d4af37]/80 font-medium tracking-wide">
-                  Smart Business & Inventory
-                </p>
-              </div>
-
+            <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="w-full p-2.5 rounded-2xl bg-rose-500/20 border border-rose-500/50 text-rose-200 text-xs flex items-center gap-2.5 shadow-[0_0_20px_rgba(239,68,68,0.3)] animate-in fade-in zoom-in-95 duration-200">
-                  <ShieldAlert size={16} className="shrink-0 text-rose-400 animate-pulse" />
-                  <span className="font-semibold leading-tight text-left">{error}</span>
+                <div className="p-3 rounded-xl bg-error/10 border border-error/20 flex items-start gap-2.5 text-error text-xs">
+                  <ShieldAlert size={16} className="shrink-0 mt-0.5" />
+                  <span>{error}</span>
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="w-full space-y-2.5">
-                {/* Row 1: First Name & Last Name */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="input-group relative flex items-center rounded-full px-3 py-1">
-                    <User size={13} className="text-[#d4af37]/70 shrink-0 ml-0.5" />
-                    <input
-                      type="text"
-                      name="first_name"
-                      autoComplete="given-name"
-                      placeholder="First Name"
-                      value={formData.first_name}
-                      onChange={handleChange}
-                      className="w-full bg-transparent border-none outline-none px-2 py-1 text-xs text-white placeholder-neutral-500 font-medium"
-                    />
-                  </div>
-                  <div className="input-group relative flex items-center rounded-full px-3 py-1">
-                    <User size={13} className="text-[#d4af37]/70 shrink-0 ml-0.5" />
-                    <input
-                      type="text"
-                      name="last_name"
-                      autoComplete="family-name"
-                      placeholder="Last Name"
-                      value={formData.last_name}
-                      onChange={handleChange}
-                      className="w-full bg-transparent border-none outline-none px-2 py-1 text-xs text-white placeholder-neutral-500 font-medium"
-                    />
-                  </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="label text-xs font-semibold text-base-content/70 pb-1">
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    name="first_name"
+                    placeholder="e.g. John"
+                    value={formData.first_name}
+                    onChange={handleChange}
+                    className="input input-bordered input-sm w-full bg-base-100 text-sm"
+                  />
                 </div>
-
-                {/* Row 2: Email & Username */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="input-group relative flex items-center rounded-full px-3 py-1">
-                    <Mail size={13} className="text-[#d4af37]/70 shrink-0 ml-0.5" />
-                    <input
-                      type="email"
-                      required
-                      name="email"
-                      autoComplete="email"
-                      placeholder="Email Address *"
-                      value={formData.email}
-                      onChange={handleChange}
-                      className="w-full bg-transparent border-none outline-none px-2 py-1 text-xs text-white placeholder-neutral-500 font-medium"
-                    />
-                  </div>
-                  <div className="input-group relative flex items-center rounded-full px-3 py-1">
-                    <User size={13} className="text-[#d4af37]/70 shrink-0 ml-0.5" />
-                    <input
-                      type="text"
-                      name="username"
-                      autoComplete="username"
-                      placeholder="Username (optional)"
-                      value={formData.username}
-                      onChange={handleChange}
-                      className="w-full bg-transparent border-none outline-none px-2 py-1 text-xs text-white placeholder-neutral-500 font-medium"
-                    />
-                  </div>
+                <div>
+                  <label className="label text-xs font-semibold text-base-content/70 pb-1">
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    name="last_name"
+                    placeholder="e.g. Doe"
+                    value={formData.last_name}
+                    onChange={handleChange}
+                    className="input input-bordered input-sm w-full bg-base-100 text-sm"
+                  />
                 </div>
+              </div>
 
-                {/* Row 3: Phone & Role */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="input-group relative flex items-center rounded-full px-3 py-1">
-                    <Phone size={13} className="text-[#d4af37]/70 shrink-0 ml-0.5" />
-                    <input
-                      type="tel"
-                      name="phone"
-                      autoComplete="tel"
-                      placeholder="Phone (optional)"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      className="w-full bg-transparent border-none outline-none px-2 py-1 text-xs text-white placeholder-neutral-500 font-medium"
-                    />
-                  </div>
-                  <div className="input-group relative flex items-center rounded-full px-3 py-1">
-                    <select
-                      name="role"
-                      value={formData.role}
-                      onChange={handleChange}
-                      className="w-full bg-transparent border-none outline-none px-2 py-1 text-xs text-neutral-300 font-medium cursor-pointer"
-                    >
-                      <option value="employee" className="bg-[#10121a] text-white">Staff / Cashier</option>
-                      <option value="manager" className="bg-[#10121a] text-white">Store Manager</option>
-                      <option value="admin" className="bg-[#10121a] text-white">Administrator</option>
-                    </select>
-                  </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="label text-xs font-semibold text-base-content/70 pb-1">
+                    Email Address <span className="text-error">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    required
+                    placeholder="john@example.com"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="input input-bordered input-sm w-full bg-base-100 text-sm"
+                  />
                 </div>
+                <div>
+                  <label className="label text-xs font-semibold text-base-content/70 pb-1">
+                    Username
+                  </label>
+                  <input
+                    type="text"
+                    name="username"
+                    placeholder="johndoe"
+                    value={formData.username}
+                    onChange={handleChange}
+                    className="input input-bordered input-sm w-full bg-base-100 text-sm"
+                  />
+                </div>
+              </div>
 
-                {/* Row 4: Password & Confirm Password */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="input-group relative flex items-center rounded-full px-3 py-1">
-                    <Lock size={13} className="text-[#d4af37]/70 shrink-0 ml-0.5" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="label text-xs font-semibold text-base-content/70 pb-1">
+                    Contact Phone
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    placeholder="+91 9876543210"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="input input-bordered input-sm w-full bg-base-100 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="label text-xs font-semibold text-base-content/70 pb-1">
+                    Role
+                  </label>
+                  <select
+                    name="role"
+                    value={formData.role}
+                    onChange={handleChange}
+                    className="select select-bordered select-sm w-full bg-base-100 text-sm"
+                  >
+                    <option value="employee">Cashier / Staff</option>
+                    <option value="manager">Store Manager</option>
+                    <option value="admin">Administrator</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="label text-xs font-semibold text-base-content/70 pb-1">
+                    Password <span className="text-error">*</span>
+                  </label>
+                  <div className="relative">
                     <input
                       type={showPassword ? "text" : "password"}
-                      required
                       name="password"
-                      autoComplete="new-password"
-                      placeholder="Password *"
+                      required
+                      placeholder="Min 6 chars + digit"
                       value={formData.password}
                       onChange={handleChange}
-                      className="w-full bg-transparent border-none outline-none px-2 py-1 text-xs text-white placeholder-neutral-500 font-medium"
+                      className="input input-bordered input-sm w-full pr-8 bg-base-100 text-sm font-mono"
                     />
-                  </div>
-                  <div className="input-group relative flex items-center rounded-full px-3 py-1">
-                    <Lock size={13} className="text-[#d4af37]/70 shrink-0 ml-0.5" />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      required
-                      name="password_confirm"
-                      autoComplete="new-password"
-                      placeholder="Confirm *"
-                      value={formData.password_confirm}
-                      onChange={handleChange}
-                      className="w-full bg-transparent border-none outline-none px-2 py-1 text-xs text-white placeholder-neutral-500 font-medium"
-                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-base-content/40 hover:text-base-content"
+                    >
+                      {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
                   </div>
                 </div>
-
-                <div className="flex items-center justify-between px-2 text-[10px]">
-                  <span className="text-neutral-400 font-mono">Min. 6 chars (incl. number)</span>
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="text-neutral-400 hover:text-[#d4af37] flex items-center gap-1 cursor-pointer transition"
-                  >
-                    {showPassword ? <EyeOff size={11} /> : <Eye size={11} />}
-                    <span>{showPassword ? "Hide Passwords" : "Show Passwords"}</span>
-                  </button>
+                <div>
+                  <label className="label text-xs font-semibold text-base-content/70 pb-1">
+                    Confirm Password <span className="text-error">*</span>
+                  </label>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password_confirm"
+                    required
+                    placeholder="Repeat password"
+                    value={formData.password_confirm}
+                    onChange={handleChange}
+                    className="input input-bordered input-sm w-full bg-base-100 text-sm font-mono"
+                  />
                 </div>
-
-                {/* Submit Button */}
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="btn-submit w-full py-2.5 rounded-full text-xs font-black text-black tracking-wider uppercase disabled:opacity-60 cursor-pointer mt-1"
-                >
-                  {submitting ? "Registering..." : "Create Account"}
-                </button>
-
-                {/* Divider */}
-                <div className="relative flex items-center justify-center w-full py-0.5">
-                  <div className="w-full border-t border-[#d4af37]/20" />
-                  <span className="absolute px-2.5 text-[9px] uppercase font-bold tracking-widest bg-[#12141c] text-[#d4af37]/75 rounded-full border border-[#d4af37]/15">
-                    OR
-                  </span>
-                </div>
-
-                {/* Google Sign-In with Official Google Symbol */}
-                <GoogleAuthButton
-                  label="Sign up with Google"
-                  disabled={submitting}
-                  onSuccess={() => {
-                    setRegisterSuccess(true);
-                    setTimeout(() => {
-                      navigate("/dashboard");
-                    }, 1250);
-                  }}
-                  onError={(msg) => {
-                    setError(msg);
-                    triggerShake();
-                  }}
-                />
-              </form>
-
-              <div className="text-[11px] text-neutral-400 text-center">
-                Already registered?{" "}
-                <Link to="/login" className="text-[#d4af37] font-bold hover:underline">
-                  Sign In
-                </Link>
               </div>
-            </div>
+
+              <Button
+                variant="primary"
+                type="submit"
+                className="w-full mt-2"
+                loading={submitting}
+              >
+                Create Account
+              </Button>
+
+              <div className="divider text-xs text-base-content/40 my-2">OR</div>
+
+              {/* Google OAuth Button */}
+              <GoogleAuthButton
+                onSuccess={() => {
+                  setRegisterSuccess(true);
+                  setTimeout(() => navigate("/"), 1000);
+                }}
+                onError={(err) => setError(err)}
+              />
+
+              <div className="text-center pt-2">
+                <span className="text-xs text-base-content/60">
+                  Already have an account?{" "}
+                  <Link to="/login" className="link link-primary font-bold">
+                    Sign in here
+                  </Link>
+                </span>
+              </div>
+            </form>
           )}
-        </div>
-      </Tilt3D>
+        </Card>
+      </div>
     </div>
   );
 }

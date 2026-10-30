@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  /* Dark Gold Luxury Design Tokens */
+  /* Dark Gold Luxury Design Tokens (Default) */
   --color-bg: #0a0b10;
   --color-surface: #12141c;
   --color-surface-elevated: #191c26;
@@ -38,6 +38,36 @@
   --shadow-3d-md: 0 12px 30px rgba(0, 0, 0, 0.55), 0 0 20px rgba(212, 175, 55, 0.08), 0 1px 0 0 rgba(212, 175, 55, 0.28) inset;
   --shadow-3d-lg: 0 24px 44px rgba(0, 0, 0, 0.7), 0 0 32px rgba(212, 175, 55, 0.15), 0 1px 1px 0 rgba(212, 175, 55, 0.35) inset;
   --shadow-3d-float: 0 28px 50px rgba(0, 0, 0, 0.75), 0 0 40px rgba(212, 175, 55, 0.2), 0 1px 1px 0 rgba(212, 175, 55, 0.4) inset;
+}
+
+[data-theme="light"] {
+  --color-bg: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #f1f5f9;
+  --color-surface-glass: rgba(255, 255, 255, 0.88);
+  --color-border: rgba(184, 134, 11, 0.22);
+  --color-border-glow: rgba(184, 134, 11, 0.45);
+  --color-text: #0f172a;
+  --color-text-muted: #64748b;
+  
+  --color-gold: #b8860b;
+  --color-gold-light: #fef3c7;
+  --color-gold-dark: #78350f;
+  --color-gold-gradient: linear-gradient(135deg, #d97706 0%, #b8860b 50%, #78350f 100%);
+  --color-gold-gradient-soft: linear-gradient(135deg, rgba(184, 134, 11, 0.15) 0%, rgba(120, 53, 15, 0.05) 100%);
+  
+  --color-primary: #b8860b;
+  --color-primary-hover: #92610d;
+  --color-primary-dark: #78350f;
+  --color-success: #16a34a;
+  --color-danger: #dc2626;
+  --color-warning: #d97706;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  
+  --shadow-3d-sm: 0 2px 6px rgba(0, 0, 0, 0.06), 0 1px 0 rgba(184, 134, 11, 0.1) inset;
+  --shadow-3d-md: 0 8px 24px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(184, 134, 11, 0.15) inset;
+  --shadow-3d-lg: 0 16px 32px rgba(0, 0, 0, 0.1), 0 1px 1px rgba(184, 134, 11, 0.2) inset;
 }
 
 * {
@@ -473,6 +503,26 @@ textarea:focus {
   border-color: #d4af37 !important;
   box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.25) !important;
   background-color: #181b28 !important;
+}
+
+[data-theme="light"] input[type="text"],
+[data-theme="light"] input[type="email"],
+[data-theme="light"] input[type="password"],
+[data-theme="light"] input[type="number"],
+[data-theme="light"] input[type="date"],
+[data-theme="light"] select,
+[data-theme="light"] textarea {
+  color: #0f172a;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+}
+
+[data-theme="light"] input:focus,
+[data-theme="light"] select:focus,
+[data-theme="light"] textarea:focus {
+  border-color: #b8860b !important;
+  box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.2) !important;
+  background-color: #ffffff !important;
 }
 
 /* ==========================================================================

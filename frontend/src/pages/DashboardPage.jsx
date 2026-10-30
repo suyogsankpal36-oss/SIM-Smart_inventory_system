@@ -3,31 +3,22 @@ import { Link } from "react-router-dom";
 import {
   AlertTriangle,
   ArrowRight,
-  ArrowUpRight,
-  Barcode,
   Boxes,
   CheckCircle,
-  CreditCard,
+  Clock,
   DollarSign,
-  Layers,
   Package,
   Plus,
   QrCode,
   Receipt,
   RefreshCw,
-  ShoppingBag,
   ShoppingCart,
   Sparkles,
-  TrendingDown,
   TrendingUp,
-  UserPlus,
   Users,
   Wallet,
-  Wifi,
-  WifiOff,
   Zap,
 } from "lucide-react";
-import { useOnlineStatus } from "../hooks/useOnlineStatus";
 import {
   Area,
   AreaChart,
@@ -41,11 +32,12 @@ import {
   YAxis,
 } from "recharts";
 import api from "../services/api";
-import Tilt3D from "../components/3d/Tilt3D";
-import Button3D from "../components/3d/Button3D";
+import { useOnlineStatus } from "../hooks/useOnlineStatus";
+import { useTheme } from "../context/ThemeContext";
+import { Badge, Button, Card, StatsCard, Table } from "../components/ui";
 
-// Smooth 60fps Animated Currency Counter
-function AnimatedCounter({ value, currencySymbol = "₹", decimals = 2, duration = 1100 }) {
+// Smooth 60fps Animated Number Counter
+function AnimatedCounter({ value, prefix = "", decimals = 0, duration = 900 }) {
   const [displayValue, setDisplayValue] = useState(0);
 
   useEffect(() => {
@@ -68,7 +60,7 @@ function AnimatedCounter({ value, currencySymbol = "₹", decimals = 2, duration
 
   return (
     <span>
-      {currencySymbol}
+      {prefix}
       {displayValue.toLocaleString("en-IN", {
         minimumFractionDigits: decimals,
         maximumFractionDigits: decimals,
@@ -77,75 +69,20 @@ function AnimatedCounter({ value, currencySymbol = "₹", decimals = 2, duration
   );
 }
 
-// Smooth 60fps Animated Integer Counter
-function AnimatedInteger({ value, duration = 1000 }) {
-  const [displayValue, setDisplayValue] = useState(0);
-
-  useEffect(() => {
-    let startTimestamp = null;
-    const target = Math.round(Number(value) || 0);
-
-    const step = (timestamp) => {
-      if (!startTimestamp) startTimestamp = timestamp;
-      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-      const easeOut = 1 - Math.pow(1 - progress, 3);
-      setDisplayValue(Math.round(target * easeOut));
-
-      if (progress < 1) {
-        window.requestAnimationFrame(step);
-      }
-    };
-
-    window.requestAnimationFrame(step);
-  }, [value, duration]);
-
-  return <span>{displayValue.toLocaleString("en-IN")}</span>;
-}
-
 export default function DashboardPage() {
-  const isOnline = useOnlineStatus();
-  const [data, setData] = useState(() => {
-    try {
-      const cached = localStorage.getItem("smart_inventory_dashboard_cache");
-      return cached ? JSON.parse(cached) : null;
-    } catch {
-      return null;
-    }
-  });
-  const [loading, setLoading] = useState(() => {
-    try {
-      return !localStorage.getItem("smart_inventory_dashboard_cache");
-    } catch {
-      return true;
-    }
-  });
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState("");
+  const isOnline = useOnlineStatus();
+  const { isDark } = useTheme();
 
   const fetchDashboardStats = async (isManual = false) => {
     if (isManual) setRefreshing(true);
-    setError("");
     try {
       const res = await api.get("/dashboard/");
       setData(res.data);
-      try {
-        localStorage.setItem("smart_inventory_dashboard_cache", JSON.stringify(res.data));
-      } catch (e) {}
     } catch (err) {
       console.error("Dashboard fetch error:", err);
-      // Fallback to cache if network fails
-      try {
-        const cached = localStorage.getItem("smart_inventory_dashboard_cache");
-        if (cached) {
-          setData(JSON.parse(cached));
-        }
-      } catch (e) {}
-
-      if (!navigator.onLine) {
-        setError("Internet connection is offline. Showing cached metrics.");
-      } else {
-        setError("Failed to load dashboard metrics. Please verify server connection.");
-      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -156,7 +93,6 @@ export default function DashboardPage() {
     fetchDashboardStats();
   }, []);
 
-  // Auto-refresh when network comes back online
   useEffect(() => {
     if (isOnline) {
       fetchDashboardStats();
@@ -178,485 +114,333 @@ export default function DashboardPage() {
     })}`;
   };
 
+  // Theme-aware chart stroke & grid colors
+  const chartGridColor = isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.06)";
+  const chartTextColor = isDark ? "#9ca3af" : "#64748b";
+
   if (loading) {
     return (
-      <div className="space-y-6 text-white">
+      <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <div className="w-56 h-10 rounded-xl bg-white/[0.04] animate-pulse" />
-          <div className="w-32 h-10 rounded-xl bg-white/[0.04] animate-pulse" />
+          <div className="skeleton h-10 w-64 rounded-2xl" />
+          <div className="skeleton h-10 w-32 rounded-2xl" />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {[1, 2, 3, 4].map((n) => (
-            <div key={n} className="h-36 rounded-2xl bg-white/[0.04] border border-[#d4af37]/10 animate-pulse" />
+            <div key={n} className="skeleton h-32 rounded-2xl w-full" />
           ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="h-80 rounded-2xl bg-white/[0.04] border border-[#d4af37]/10 animate-pulse" />
-          <div className="h-80 rounded-2xl bg-white/[0.04] border border-[#d4af37]/10 animate-pulse" />
+          <div className="skeleton h-80 rounded-2xl w-full" />
+          <div className="skeleton h-80 rounded-2xl w-full" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 pb-14 text-white">
-      {/* Top Header with Real-time Live Badge & Quick Actions */}
+    <div className="space-y-8 pb-10">
+      {/* Executive Command Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2.5 mb-2 flex-wrap">
-            {isOnline ? (
-              <>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#d4af37]/10 border border-[#d4af37]/30 text-xs font-semibold tracking-wider text-[#d4af37] uppercase">
-                  <Sparkles size={13} />
-                  <span>Realtime Telemetry Active</span>
-                </div>
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[11px] font-bold text-emerald-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                  <span>LIVE</span>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/15 border border-rose-500/40 text-xs font-semibold tracking-wider text-rose-300 uppercase">
-                  <WifiOff size={13} className="text-rose-400" />
-                  <span>Telemetry Paused (Offline)</span>
-                </div>
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/15 border border-rose-500/40 text-[11px] font-bold text-rose-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                  <span>OFFLINE</span>
-                </div>
-              </>
-            )}
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <span className="badge badge-primary badge-outline text-[11px] font-bold uppercase tracking-wider py-2">
+              <Sparkles className="w-3 h-3 mr-1" />
+              Realtime Telemetry Active
+            </span>
+            <span className="badge badge-success badge-sm font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-current animate-ping mr-1" />
+              LIVE
+            </span>
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-amber-100 via-[#d4af37] to-amber-500 bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-base-content">
             Executive Command Suite
           </h1>
-          <p className="text-sm text-neutral-400 mt-1 max-w-2xl">
-            Realtime operations, fiscal telemetry, and predictive inventory dynamics for{" "}
-            <strong className="text-white">{data?.business?.name || "Smart Inventory"}</strong>.
+          <p className="text-xs sm:text-sm text-base-content/60 mt-1">
+            Realtime operations, fiscal telemetry, and inventory dynamics for{" "}
+            <strong className="text-base-content font-bold">{data?.business?.name || "Smart Business"}</strong>.
           </p>
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2.5 flex-wrap">
           <Link to="/pos">
-            <Button3D variant="gold" icon={ShoppingCart}>
+            <Button variant="gold" icon={ShoppingCart} size="sm">
               Launch POS
-            </Button3D>
+            </Button>
           </Link>
-
-          <Link to="/barcodes">
-            <Button3D variant="dark" icon={QrCode}>
-              Label Studio
-            </Button3D>
+          <Link to="/products">
+            <Button variant="outline" icon={Plus} size="sm">
+              New Product
+            </Button>
           </Link>
-
-          <Button3D
-            variant="dark"
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => fetchDashboardStats(true)}
-            disabled={!isOnline || refreshing}
-            icon={!isOnline ? WifiOff : RefreshCw}
-            className={refreshing || !isOnline ? "opacity-60 cursor-not-allowed" : ""}
+            loading={refreshing}
+            icon={RefreshCw}
+            title="Refresh telemetry"
           >
-            {!isOnline ? "Offline" : refreshing ? "Syncing..." : "Sync Live"}
-          </Button3D>
+            Refresh
+          </Button>
         </div>
       </div>
 
-      {/* Offline Status Alert Banner */}
-      {!isOnline && (
-        <div className="w-full p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-center justify-between gap-3 shadow-lg animate-in fade-in duration-200">
-          <div className="flex items-center gap-2.5">
-            <WifiOff size={16} className="text-amber-400 shrink-0" />
-            <span>
-              <strong>Network Disconnected (Offline):</strong> You are currently disconnected from the internet. Displaying cached dashboard telemetry. Real-time updates will automatically resume when connection is restored.
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => fetchDashboardStats(true)}
-            className="px-3 py-1 rounded-full text-[11px] font-bold bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 transition shrink-0 cursor-pointer"
-          >
-            Retry Connection
-          </button>
-        </div>
-      )}
+      {/* KPI Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <StatsCard
+          title="Today's Revenue"
+          value={<AnimatedCounter value={kpis.today_sales} prefix={currencySymbol} decimals={2} />}
+          icon={DollarSign}
+          trend={kpis.today_orders_count ? `${kpis.today_orders_count} orders today` : "No orders yet"}
+          trendPositive={kpis.today_sales > 0}
+          accentColor="primary"
+        />
 
-      {error && (
-        <div className="card-3d p-4 rounded-2xl border border-rose-500/30 bg-rose-500/10 flex items-center justify-between text-sm text-rose-300">
-          <div className="flex items-center gap-2">
-            <AlertTriangle size={18} className="text-rose-400" />
-            <span>{error}</span>
-          </div>
-          <button
-            onClick={() => fetchDashboardStats(true)}
-            className="px-3 py-1 rounded-lg text-xs font-bold bg-rose-500 text-white"
-          >
-            Retry
-          </button>
-        </div>
-      )}
+        <StatsCard
+          title="Monthly Gross Sales"
+          value={<AnimatedCounter value={kpis.month_sales} prefix={currencySymbol} decimals={2} />}
+          icon={TrendingUp}
+          trend={kpis.total_orders_count ? `${kpis.total_orders_count} lifetime orders` : "0 orders"}
+          trendPositive={true}
+          trendLabel="All channels"
+          accentColor="success"
+        />
 
-      {/* 4 Primary Financial KPI Cards (Staggered Tilt Cards) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {/* Today's Sales */}
-        <Tilt3D intensity={14} glareColor="255, 235, 170">
-          <div className="card-3d p-5 rounded-2xl relative overflow-hidden group border-t-2 border-t-[#d4af37]">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">Today's Revenue</span>
-              <div className="w-10 h-10 rounded-xl bg-[#d4af37]/15 border border-[#d4af37]/30 flex items-center justify-center text-[#d4af37] shadow">
-                <DollarSign size={20} />
-              </div>
-            </div>
-            <div className="text-3xl font-black mt-3 text-white tracking-tight">
-              <AnimatedCounter value={kpis.today_sales} currencySymbol={currencySymbol} />
-            </div>
-            <div className="text-xs text-neutral-400 mt-1 flex items-center gap-1.5">
-              <span className="text-emerald-400 font-bold">
-                <AnimatedInteger value={kpis.today_orders_count} /> orders
-              </span>{" "}
-              finalized today
-            </div>
-          </div>
-        </Tilt3D>
+        <StatsCard
+          title="Estimated Net Profit"
+          value={<AnimatedCounter value={kpis.estimated_profit} prefix={currencySymbol} decimals={2} />}
+          icon={Wallet}
+          trend={`Operating exp: ${formatCurrency(kpis.month_expenses)}`}
+          trendPositive={kpis.estimated_profit >= 0}
+          accentColor="info"
+        />
 
-        {/* Monthly Revenue */}
-        <Tilt3D intensity={14} glareColor="255, 235, 170">
-          <div className="card-3d p-5 rounded-2xl relative overflow-hidden group border-t-2 border-t-amber-400">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">This Month's Revenue</span>
-              <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300 shadow">
-                <TrendingUp size={20} />
-              </div>
-            </div>
-            <div className="text-3xl font-black mt-3 text-amber-300 tracking-tight">
-              <AnimatedCounter value={kpis.month_sales} currencySymbol={currencySymbol} />
-            </div>
-            <div className="text-xs text-neutral-400 mt-1 truncate">
-              Lifetime: <strong className="text-neutral-200">{formatCurrency(kpis.total_sales)}</strong>
-            </div>
-          </div>
-        </Tilt3D>
-
-        {/* Monthly Expenses */}
-        <Tilt3D intensity={14} glareColor="255, 235, 170">
-          <div className="card-3d p-5 rounded-2xl relative overflow-hidden group border-t-2 border-t-rose-400">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">Monthly Expenses</span>
-              <div className="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 shadow">
-                <TrendingDown size={20} />
-              </div>
-            </div>
-            <div className="text-3xl font-black mt-3 text-rose-400 tracking-tight">
-              <AnimatedCounter value={kpis.month_expenses} currencySymbol={currencySymbol} />
-            </div>
-            <div className="text-xs text-neutral-400 mt-1">
-              Operating costs this period
-            </div>
-          </div>
-        </Tilt3D>
-
-        {/* Estimated Net Profit */}
-        <Tilt3D intensity={14} glareColor="255, 235, 170">
-          <div className="card-3d p-5 rounded-2xl relative overflow-hidden group border-t-2 border-t-emerald-400">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">Estimated Net Profit</span>
-              <div
-                className={`w-10 h-10 rounded-xl flex items-center justify-center shadow ${
-                  kpis.estimated_profit >= 0
-                    ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400"
-                    : "bg-rose-500/15 border border-rose-500/30 text-rose-400"
-                }`}
-              >
-                <Zap size={20} />
-              </div>
-            </div>
-            <div
-              className={`text-3xl font-black mt-3 tracking-tight ${
-                kpis.estimated_profit >= 0 ? "text-emerald-400" : "text-rose-400"
-              }`}
-            >
-              <AnimatedCounter value={kpis.estimated_profit} currencySymbol={currencySymbol} />
-            </div>
-            <div className="text-xs text-neutral-400 mt-1">
-              Sales minus direct operating outlays
-            </div>
-          </div>
-        </Tilt3D>
+        <StatsCard
+          title="Stock Health"
+          value={<AnimatedCounter value={kpis.low_stock_count} decimals={0} />}
+          icon={AlertTriangle}
+          trend={kpis.low_stock_count > 0 ? "Requires restocking" : "All stock healthy"}
+          trendPositive={kpis.low_stock_count === 0}
+          description={`From ${kpis.total_products || 0} catalog products`}
+          accentColor={kpis.low_stock_count > 0 ? "warning" : "success"}
+        />
       </div>
 
-      {/* 4 Secondary Quick Metric Tiles */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="card-3d p-4 rounded-xl border border-[#d4af37]/20 flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-lg bg-[#d4af37]/10 border border-[#d4af37]/30 flex items-center justify-center text-[#d4af37] shrink-0">
-            <Package size={20} />
-          </div>
-          <div>
-            <div className="text-xl font-bold text-white tracking-tight">
-              <AnimatedInteger value={kpis.total_products} />
-            </div>
-            <div className="text-xs text-neutral-400">Total Products</div>
-          </div>
-        </div>
-
-        <div className="card-3d p-4 rounded-xl border border-[#d4af37]/20 flex items-center gap-3.5">
-          <div
-            className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-              kpis.low_stock_count > 0
-                ? "bg-rose-500/15 border border-rose-500/30 text-rose-400"
-                : "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400"
-            }`}
-          >
-            <AlertTriangle size={20} />
-          </div>
-          <div>
-            <div
-              className={`text-xl font-bold tracking-tight ${
-                kpis.low_stock_count > 0 ? "text-rose-400" : "text-emerald-400"
-              }`}
-            >
-              <AnimatedInteger value={kpis.low_stock_count} />
-            </div>
-            <div className="text-xs text-neutral-400">Low Stock Warnings</div>
-          </div>
-        </div>
-
-        <div className="card-3d p-4 rounded-xl border border-[#d4af37]/20 flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-lg bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
-            <Users size={20} />
-          </div>
-          <div>
-            <div className="text-xl font-bold text-blue-300 tracking-tight">
-              <AnimatedInteger value={kpis.total_customers} />
-            </div>
-            <div className="text-xs text-neutral-400">Active Customers</div>
-          </div>
-        </div>
-
-        <div className="card-3d p-4 rounded-xl border border-[#d4af37]/20 flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300 shrink-0">
-            <Boxes size={20} />
-          </div>
-          <div>
-            <div className="text-xl font-bold text-amber-300 tracking-tight">
-              <AnimatedInteger value={kpis.total_suppliers} />
-            </div>
-            <div className="text-xs text-neutral-400">Active Suppliers</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Access Bar */}
-      <div className="card-3d p-4 rounded-2xl border border-[#d4af37]/20 flex flex-wrap items-center justify-between gap-3">
-        <span className="text-xs font-bold uppercase tracking-wider text-[#d4af37] flex items-center gap-2">
-          <Sparkles size={14} />
-          Accelerated Workflows
-        </span>
-
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Link to="/products" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/40 border border-[#d4af37]/30 text-xs font-semibold text-neutral-200 hover:text-white hover:bg-[#d4af37]/10 transition">
-            <Plus size={13} className="text-[#d4af37]" />
-            <span>Register Product</span>
-          </Link>
-
-          <Link to="/expenses" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/40 border border-[#d4af37]/30 text-xs font-semibold text-neutral-200 hover:text-white hover:bg-[#d4af37]/10 transition">
-            <Receipt size={13} className="text-[#d4af37]" />
-            <span>Record Expense</span>
-          </Link>
-
-          <Link to="/customers" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/40 border border-[#d4af37]/30 text-xs font-semibold text-neutral-200 hover:text-white hover:bg-[#d4af37]/10 transition">
-            <UserPlus size={13} className="text-[#d4af37]" />
-            <span>New Customer</span>
-          </Link>
-
-          <Link to="/reports" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/40 border border-[#d4af37]/30 text-xs font-semibold text-neutral-200 hover:text-white hover:bg-[#d4af37]/10 transition">
-            <ArrowUpRight size={13} className="text-[#d4af37]" />
-            <span>Financial Reports</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* Charts Grid */}
+      {/* Analytics Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 7-Day Sales Trend */}
-        <div className="card-3d p-6 rounded-2xl border border-[#d4af37]/20">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <TrendingUp size={18} className="text-[#d4af37]" />
-                7-Day Sales Trajectory
-              </h3>
-              <p className="text-xs text-neutral-400">Daily transaction volume</p>
-            </div>
-            <span className="badge-3d-gold text-[10px]">REALTIME</span>
-          </div>
-
-          <div className="h-72 w-full">
+        {/* 7-Day Revenue Trend */}
+        <Card
+          title="7-Day Sales Velocity"
+          subtitle="Realtime transactional order volume & revenue trend"
+          icon={TrendingUp}
+        >
+          <div className="h-72 w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={salesTrend} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+              <AreaChart data={salesTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="dashGoldGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#D4AF37" stopOpacity={0.0} />
+                  <linearGradient id="goldAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#d4af37" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#d4af37" stopOpacity={0.0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(212, 175, 55, 0.1)" />
-                <XAxis dataKey="date" stroke="#64748b" tick={{ fill: "#94a3b8", fontSize: 11 }} />
-                <YAxis stroke="#64748b" tick={{ fill: "#94a3b8", fontSize: 11 }} tickFormatter={(v) => `₹${(v/1000).toFixed(0)}k`} />
+                <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} vertical={false} />
+                <XAxis dataKey="date" stroke={chartTextColor} fontSize={11} tickLine={false} />
+                <YAxis
+                  stroke={chartTextColor}
+                  fontSize={11}
+                  tickLine={false}
+                  tickFormatter={(v) => `${currencySymbol}${v}`}
+                />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "#12141c",
-                    border: "1px solid rgba(212, 175, 55, 0.4)",
-                    borderRadius: "12px",
-                    color: "#fff",
+                    backgroundColor: isDark ? "#12141c" : "#ffffff",
+                    borderColor: isDark ? "rgba(212, 175, 55, 0.4)" : "#cbd5e1",
+                    borderRadius: "1rem",
+                    boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
+                    fontSize: "12px",
+                    color: isDark ? "#f5f3ef" : "#0f172a",
                   }}
-                  formatter={(val) => [formatCurrency(val), "Sales"]}
+                  formatter={(val) => [formatCurrency(val), "Sales Revenue"]}
                 />
-                <Area type="monotone" dataKey="sales" stroke="#D4AF37" strokeWidth={3} fill="url(#dashGoldGrad)" />
+                <Area
+                  type="monotone"
+                  dataKey="total"
+                  stroke="#d4af37"
+                  strokeWidth={2.5}
+                  fillOpacity={1}
+                  fill="url(#goldAreaGrad)"
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </Card>
 
-        {/* 6-Month Monthly Comparison */}
-        <div className="card-3d p-6 rounded-2xl border border-[#d4af37]/20">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Boxes size={18} className="text-[#d4af37]" />
-                6-Month Revenue vs Outlays
-              </h3>
-              <p className="text-xs text-neutral-400">Operating performance comparison</p>
-            </div>
-            <span className="badge-3d-gold text-[10px]">FISCAL</span>
-          </div>
-
-          <div className="h-72 w-full">
+        {/* 6-Month Comparison (Revenue vs Operating Expenses) */}
+        <Card
+          title="Trailing 6-Month Fiscal Performance"
+          subtitle="Comparative monthly revenue versus operational expenditure"
+          icon={DollarSign}
+        >
+          <div className="h-72 w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyComp} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(212, 175, 55, 0.1)" />
-                <XAxis dataKey="month" stroke="#64748b" tick={{ fill: "#94a3b8", fontSize: 11 }} />
-                <YAxis stroke="#64748b" tick={{ fill: "#94a3b8", fontSize: 11 }} tickFormatter={(v) => `₹${(v/1000).toFixed(0)}k`} />
+              <BarChart data={monthlyComp} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} vertical={false} />
+                <XAxis dataKey="month" stroke={chartTextColor} fontSize={11} tickLine={false} />
+                <YAxis
+                  stroke={chartTextColor}
+                  fontSize={11}
+                  tickLine={false}
+                  tickFormatter={(v) => `${currencySymbol}${v}`}
+                />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "#12141c",
-                    border: "1px solid rgba(212, 175, 55, 0.4)",
-                    borderRadius: "12px",
-                    color: "#fff",
+                    backgroundColor: isDark ? "#12141c" : "#ffffff",
+                    borderColor: isDark ? "rgba(212, 175, 55, 0.4)" : "#cbd5e1",
+                    borderRadius: "1rem",
+                    boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
+                    fontSize: "12px",
+                    color: isDark ? "#f5f3ef" : "#0f172a",
                   }}
-                  formatter={(val) => [formatCurrency(val)]}
+                  formatter={(val, name) => [
+                    formatCurrency(val),
+                    name === "revenue" ? "Sales Revenue" : "Operating Expenses",
+                  ]}
                 />
-                <Legend wrapperStyle={{ fontSize: 11, paddingTop: 6 }} />
-                <Bar dataKey="revenue" name="Revenue" fill="#D4AF37" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="expenses" name="Expenses" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+                <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }} />
+                <Bar dataKey="revenue" name="Revenue" fill="#d4af37" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="expenses" name="Expenses" fill="#ef4444" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </Card>
       </div>
 
-      {/* Actionable Data Tables Section (Depth) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Orders */}
-        <div className="card-3d rounded-2xl overflow-hidden border border-[#d4af37]/20">
-          <div className="p-4 bg-black/40 border-b border-[#d4af37]/20 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-bold text-white">Recent Sales Orders</h3>
-              <span className="badge-3d-gold text-[10px]">Latest 5</span>
-            </div>
-            <Link to="/orders" className="text-xs font-semibold text-[#d4af37] hover:underline flex items-center gap-1">
-              <span>View All</span>
-              <ArrowRight size={12} />
-            </Link>
-          </div>
-
-          {recentOrders.length === 0 ? (
-            <div className="p-12 text-center text-xs text-neutral-400">
-              No sales orders finalized today. Complete checkout at POS terminal.
-            </div>
-          ) : (
-            <div className="overflow-x-auto mobile-touch-scroll">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-[#d4af37]/20 bg-black/30 text-[11px] font-bold uppercase tracking-wider text-neutral-400">
-                    <th className="py-3 px-4">Order #</th>
-                    <th className="py-3 px-4">Customer</th>
-                    <th className="py-3 px-4">Method</th>
-                    <th className="py-3 px-4 text-right">Total</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#d4af37]/10 text-xs">
-                  {recentOrders.map((ord) => (
-                    <tr key={ord.id} className="table-row-3d hover:bg-white/[0.02] transition">
-                      <td className="py-3 px-4 font-mono font-bold text-[#d4af37]">{ord.order_number}</td>
-                      <td className="py-3 px-4 text-neutral-200">{ord.customer_name}</td>
-                      <td className="py-3 px-4">
-                        <span className="px-2 py-0.5 rounded-full bg-black/50 border border-[#d4af37]/30 text-neutral-300 uppercase text-[10px]">
-                          {ord.payment_method}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-right font-mono font-bold text-amber-300">
-                        {formatCurrency(ord.total_amount)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+      {/* Operational Data Tables Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Recent Orders Stream (2 Columns) */}
+        <div className="lg:col-span-2">
+          <Card
+            title="Recent Sales Orders"
+            subtitle="Latest finalized transactions from POS and online channels"
+            icon={Receipt}
+            action={
+              <Link to="/orders">
+                <Button variant="ghost" size="xs" iconRight={ArrowRight}>
+                  View All Orders
+                </Button>
+              </Link>
+            }
+          >
+            <Table
+              data={recentOrders}
+              columns={[
+                {
+                  header: "Order #",
+                  key: "order_number",
+                  render: (row) => (
+                    <span className="font-mono font-bold text-primary">{row.order_number}</span>
+                  ),
+                },
+                {
+                  header: "Customer",
+                  key: "customer_name",
+                  render: (row) => (
+                    <span className="font-medium text-base-content">
+                      {row.customer_name || "Walk-in Customer"}
+                    </span>
+                  ),
+                },
+                {
+                  header: "Total",
+                  key: "total_amount",
+                  render: (row) => (
+                    <span className="font-bold text-base-content">{formatCurrency(row.total_amount)}</span>
+                  ),
+                },
+                {
+                  header: "Method",
+                  key: "payment_method",
+                  render: (row) => (
+                    <span className="badge badge-neutral text-[10px] uppercase font-bold">
+                      {row.payment_method}
+                    </span>
+                  ),
+                },
+                {
+                  header: "Status",
+                  key: "status",
+                  render: (row) => <Badge status={row.status}>{row.status}</Badge>,
+                },
+                {
+                  header: "Time",
+                  key: "created_at",
+                  render: (row) => (
+                    <span className="text-xs text-base-content/60">{row.created_at}</span>
+                  ),
+                },
+              ]}
+              emptyMessage="No recent orders found"
+              emptyDescription="Orders completed at the POS terminal will appear here in real-time."
+            />
+          </Card>
         </div>
 
-        {/* Low Stock Alerts */}
-        <div className="card-3d rounded-2xl overflow-hidden border border-[#d4af37]/20">
-          <div className="p-4 bg-black/40 border-b border-[#d4af37]/20 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-bold text-white">Low-Stock Warnings</h3>
-              {kpis.low_stock_count > 0 && (
-                <span className="px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/40 text-[10px] font-bold text-rose-400">
-                  {kpis.low_stock_count} Critical
-                </span>
-              )}
-            </div>
-            <Link to="/inventory" className="text-xs font-semibold text-[#d4af37] hover:underline flex items-center gap-1">
-              <span>Stock Manager</span>
-              <ArrowRight size={12} />
-            </Link>
-          </div>
-
-          {lowStockItems.length === 0 ? (
-            <div className="p-12 text-center text-xs text-emerald-400 font-semibold flex items-center justify-center gap-2">
-              <CheckCircle size={16} />
-              <span>All product inventory levels are healthy!</span>
-            </div>
-          ) : (
-            <div className="overflow-x-auto mobile-touch-scroll">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-[#d4af37]/20 bg-black/30 text-[11px] font-bold uppercase tracking-wider text-neutral-400">
-                    <th className="py-3 px-4">Product</th>
-                    <th className="py-3 px-4">SKU</th>
-                    <th className="py-3 px-4 text-center">Stock</th>
-                    <th className="py-3 px-4 text-right">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#d4af37]/10 text-xs">
-                  {lowStockItems.map((prod) => (
-                    <tr key={prod.id} className="table-row-3d hover:bg-white/[0.02] transition">
-                      <td className="py-3 px-4 font-semibold text-neutral-200">{prod.name}</td>
-                      <td className="py-3 px-4 text-neutral-400 font-mono">{prod.sku}</td>
-                      <td className="py-3 px-4 text-center font-bold text-rose-400 font-mono">
-                        {prod.stock_quantity}
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <span className="px-2 py-0.5 rounded-full bg-rose-500/15 border border-rose-500/40 text-rose-300 text-[10px] font-bold">
-                          LOW STOCK
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+        {/* Low Stock Watchlist (1 Column) */}
+        <div className="lg:col-span-1">
+          <Card
+            title="Low Stock Watchlist"
+            subtitle="Products reaching replenishment threshold"
+            icon={AlertTriangle}
+            action={
+              <Link to="/inventory">
+                <Button variant="ghost" size="xs" iconRight={ArrowRight}>
+                  Audit
+                </Button>
+              </Link>
+            }
+          >
+            {lowStockItems.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <div className="p-3 rounded-full bg-success/10 text-success mb-2">
+                  <CheckCircle className="w-8 h-8" />
+                </div>
+                <h4 className="font-bold text-sm text-base-content">Inventory Optimal</h4>
+                <p className="text-xs text-base-content/60 mt-1 max-w-xs">
+                  All catalog items currently satisfy their required minimum safety stock levels.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {lowStockItems.slice(0, 5).map((prod) => (
+                  <div
+                    key={prod.id}
+                    className="flex items-center justify-between p-3 rounded-xl bg-base-300/40 border border-base-300 hover:border-warning/40 transition"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-bold text-base-content truncate">{prod.name}</div>
+                      <div className="text-[10px] text-base-content/50 font-mono mt-0.5">
+                        SKU: {prod.sku}
+                      </div>
+                    </div>
+                    <div className="text-right pl-3 shrink-0">
+                      <Badge status="low_stock" size="xs">
+                        {prod.stock_quantity} left
+                      </Badge>
+                      <div className="text-[10px] text-base-content/50 mt-0.5">
+                        Min: {prod.minimum_stock}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <Link to="/inventory" className="block pt-2">
+                  <Button variant="outline" size="xs" fullWidth iconRight={ArrowRight}>
+                    Go to Restock Management
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </Card>
         </div>
       </div>
     </div>

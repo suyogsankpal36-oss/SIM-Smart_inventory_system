@@ -1,32 +1,28 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import {
-  Plus,
-  Search,
-  Filter,
-  Edit,
-  Trash2,
-  Package,
-  Sparkles,
-  SlidersHorizontal,
-  ArrowUpDown,
   AlertTriangle,
+  Boxes,
   CheckCircle2,
-  XCircle,
-  Copy,
+  Edit,
+  Folder,
+  Layers,
+  Package,
+  Plus,
+  QrCode,
+  Search,
+  SlidersHorizontal,
+  Sparkles,
+  Trash2,
   Upload,
   X,
-  QrCode,
-  Layers,
-  Coins,
-  Boxes,
+  XCircle,
 } from "lucide-react";
 import productService from "../services/productService";
 import inventoryService from "../services/inventoryService";
 import { useAuth } from "../context/AuthContext";
 import ProductBarcodeModal from "../components/ProductBarcodeModal";
-import Tilt3D from "../components/3d/Tilt3D";
-import Button3D from "../components/3d/Button3D";
+import { Badge, Button, Card, Input, Modal, Select, StatsCard, Table } from "../components/ui";
 
 export default function ProductsPage() {
   const { isAdmin, isManager } = useAuth();
@@ -102,25 +98,26 @@ export default function ProductsPage() {
       if (ordering) params.ordering = ordering;
 
       const data = await productService.getProducts(params);
-      setProducts(Array.isArray(data) ? data : data.results || []);
+      const list = Array.isArray(data) ? data : data.results || [];
+      setProducts(list);
     } catch (err) {
-      console.error("Failed to load products:", err);
-      toast.error("Failed to load product catalog.");
+      console.error("Failed to fetch products:", err);
+      toast.error("Failed to load products.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
+  const handleGenerateSku = async () => {
+    try {
+      const res = await productService.generateSku();
+      if (res && res.sku) {
+        setFormData((prev) => ({ ...prev, sku: res.sku }));
+        toast.success(`Generated SKU: ${res.sku}`);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to auto-generate SKU candidate.");
     }
   };
 
@@ -129,7 +126,7 @@ export default function ProductsPage() {
     setFormData({
       name: "",
       sku: "",
-      category: categories[0]?.id || "",
+      category: categories.length > 0 ? String(categories[0].id) : "",
       description: "",
       purchase_price: "",
       selling_price: "",
@@ -148,13 +145,13 @@ export default function ProductsPage() {
     setFormData({
       name: prod.name,
       sku: prod.sku,
-      category: prod.category || "",
+      category: prod.category ? String(prod.category) : "",
       description: prod.description || "",
-      purchase_price: prod.purchase_price,
-      selling_price: prod.selling_price,
-      tax_rate: prod.tax_rate,
-      minimum_stock: prod.minimum_stock,
-      initial_stock: prod.stock_quantity,
+      purchase_price: String(prod.purchase_price || ""),
+      selling_price: String(prod.selling_price || ""),
+      tax_rate: String(prod.tax_rate ?? "18.00"),
+      minimum_stock: String(prod.minimum_stock ?? "5"),
+      initial_stock: String(prod.stock_quantity ?? "0"),
       supplier_name: prod.supplier_name || "",
     });
     setImageFile(null);
@@ -162,23 +159,34 @@ export default function ProductsPage() {
     setIsModalOpen(true);
   };
 
-  const handleSaveProduct = async (e) => {
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setImagePreview(reader.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) {
       toast.error("Product name is required.");
       return;
     }
-    if (!formData.selling_price || parseFloat(formData.selling_price) <= 0) {
-      toast.error("Valid selling price is required.");
+    if (!formData.sku.trim()) {
+      toast.error("SKU is required.");
       return;
     }
 
-    setSubmitting(true);
     try {
+      setSubmitting(true);
       const data = new FormData();
-      Object.entries(formData).forEach(([key, val]) => {
-        if (key === "initial_stock" && editingProduct) return;
-        if (val !== undefined && val !== null) data.append(key, val);
+      Object.keys(formData).forEach((key) => {
+        if (formData[key] !== null && formData[key] !== undefined) {
+          data.append(key, formData[key]);
+        }
       });
       if (imageFile) {
         data.append("image", imageFile);
@@ -186,16 +194,17 @@ export default function ProductsPage() {
 
       if (editingProduct) {
         await productService.updateProduct(editingProduct.id, data);
-        toast.success(`Updated "${formData.name}" successfully!`);
+        toast.success("Product updated successfully!");
       } else {
         await productService.createProduct(data);
-        toast.success(`Product "${formData.name}" created!`);
+        toast.success("Product created successfully!");
       }
+
       setIsModalOpen(false);
       fetchProducts();
     } catch (err) {
       console.error(err);
-      const detail = err.response?.data?.sku?.[0] || err.response?.data?.detail || "Failed to save product.";
+      const detail = err.response?.data?.detail || "Failed to save product.";
       toast.error(detail);
     } finally {
       setSubmitting(false);
@@ -228,10 +237,11 @@ export default function ProductsPage() {
 
     setAdjusting(true);
     try {
-      await inventoryService.adjustStock(adjustModalProduct.id, {
+      await inventoryService.adjustStock({
+        product: adjustModalProduct.id,
         adjustment_type: adjustType,
         quantity: qty,
-        reason: adjustReason.trim() || "Manual adjustment from products table",
+        notes: adjustReason.trim() || "Manual adjustment from products table",
       });
       toast.success(`Stock updated for "${adjustModalProduct.name}".`);
       setAdjustModalProduct(null);
@@ -255,648 +265,483 @@ export default function ProductsPage() {
   const outOfStockCount = products.filter((p) => p.stock_quantity <= 0).length;
 
   return (
-    <div className="space-y-8 pb-14 text-white">
+    <div className="space-y-6 pb-12">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#d4af37]/10 border border-[#d4af37]/30 text-xs font-semibold tracking-wider text-[#d4af37] mb-2 uppercase">
-            <Package size={14} className="text-[#d4af37]" />
-            Catalog Master & SKU Directory
+          <div className="flex items-center gap-2 mb-1">
+            <span className="badge badge-primary badge-outline text-[11px] font-bold uppercase tracking-wider py-2">
+              <Package className="w-3 h-3 mr-1" />
+              Catalog Master & SKU Directory
+            </span>
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-amber-100 via-[#d4af37] to-amber-500 bg-clip-text text-transparent">
+          <h1 className="text-2xl font-extrabold tracking-tight text-base-content">
             Product Catalog & Pricing
           </h1>
-          <p className="text-sm text-neutral-400 mt-1 max-w-2xl">
-            Register new inventory items, manage pricing, margin structures, barcode metadata, and assign supplier channels.
+          <p className="text-xs sm:text-sm text-base-content/60 mt-0.5">
+            Register inventory items, barcodes, margins, and stock thresholds.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          {canManage && (
-            <Button3D
-              variant="gold"
-              onClick={openCreateModal}
-              icon={Plus}
+        {canManage && (
+          <Button variant="gold" icon={Plus} onClick={openCreateModal} size="sm">
+            Add Product
+          </Button>
+        )}
+      </div>
+
+      {/* KPI Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatsCard
+          title="Total Catalog"
+          value={totalCount}
+          icon={Package}
+          description="Active products"
+          accentColor="primary"
+        />
+        <StatsCard
+          title="In Stock"
+          value={inStockCount}
+          icon={CheckCircle2}
+          description="Optimal inventory"
+          accentColor="success"
+        />
+        <StatsCard
+          title="Low Stock"
+          value={lowStockCount}
+          icon={AlertTriangle}
+          description="At reorder level"
+          accentColor="warning"
+        />
+        <StatsCard
+          title="Out of Stock"
+          value={outOfStockCount}
+          icon={XCircle}
+          description="Depleted items"
+          accentColor="error"
+        />
+      </div>
+
+      {/* Search & Filters */}
+      <Card className="p-4">
+        <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
+          <div className="relative w-full md:w-80">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-base-content/40" />
+            <input
+              type="text"
+              placeholder="Search product, SKU, or supplier..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="input input-bordered input-sm w-full pl-10 rounded-xl bg-base-100 text-base-content"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="select select-bordered select-sm rounded-xl bg-base-100 text-xs text-base-content"
             >
-              Add Product
-            </Button3D>
-          )}
-        </div>
-      </div>
+              <option value="all">All Categories</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
 
-      {/* KPI Counters */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <Tilt3D intensity={12}>
-          <div className="card-3d p-5 rounded-2xl relative overflow-hidden">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">Total Products</span>
-              <div className="w-10 h-10 rounded-xl bg-[#d4af37]/15 border border-[#d4af37]/30 flex items-center justify-center text-[#d4af37]">
-                <Package size={20} />
-              </div>
-            </div>
-            <div className="text-3xl font-black mt-3 text-white tracking-tight">{totalCount}</div>
-            <div className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#d4af37]"></span>
-              Active catalog items
-            </div>
-          </div>
-        </Tilt3D>
-
-        <Tilt3D intensity={12}>
-          <div className="card-3d p-5 rounded-2xl relative overflow-hidden">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">In Stock</span>
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                <CheckCircle2 size={20} />
-              </div>
-            </div>
-            <div className="text-3xl font-black mt-3 text-emerald-400 tracking-tight">{inStockCount}</div>
-            <div className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-              Healthy inventory depth
-            </div>
-          </div>
-        </Tilt3D>
-
-        <Tilt3D intensity={12}>
-          <div className="card-3d p-5 rounded-2xl relative overflow-hidden">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">Low Stock Alert</span>
-              <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300">
-                <AlertTriangle size={20} />
-              </div>
-            </div>
-            <div className="text-3xl font-black mt-3 text-amber-300 tracking-tight">{lowStockCount}</div>
-            <div className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-              At or below reorder threshold
-            </div>
-          </div>
-        </Tilt3D>
-
-        <Tilt3D intensity={12}>
-          <div className="card-3d p-5 rounded-2xl relative overflow-hidden">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">Out of Stock</span>
-              <div className="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400">
-                <XCircle size={20} />
-              </div>
-            </div>
-            <div className="text-3xl font-black mt-3 text-rose-400 tracking-tight">{outOfStockCount}</div>
-            <div className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
-              Zero-inventory lines
-            </div>
-          </div>
-        </Tilt3D>
-      </div>
-
-      {/* Search and Filters Toolbar */}
-      <div className="card-3d p-4 rounded-2xl border border-[#d4af37]/20 flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div className="relative w-full md:w-80">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-500" />
-          <input
-            type="text"
-            placeholder="Search by product name, SKU, or supplier..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-8 py-2.5 rounded-xl bg-black/40 border border-[#d4af37]/25 text-sm text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-[#d4af37]"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white"
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="select select-bordered select-sm rounded-xl bg-base-100 text-xs text-base-content"
             >
-              <X size={14} />
-            </button>
-          )}
+              <option value="all">All Statuses</option>
+              <option value="in_stock">In Stock</option>
+              <option value="low_stock">Low Stock</option>
+              <option value="out_of_stock">Out of Stock</option>
+            </select>
+
+            <select
+              value={ordering}
+              onChange={(e) => setOrdering(e.target.value)}
+              className="select select-bordered select-sm rounded-xl bg-base-100 text-xs text-base-content"
+            >
+              <option value="-created_at">Newest First</option>
+              <option value="name">Name (A-Z)</option>
+              <option value="-selling_price">Price (High-Low)</option>
+              <option value="selling_price">Price (Low-High)</option>
+              <option value="stock_quantity">Stock (Low-High)</option>
+            </select>
+          </div>
         </div>
-
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-3.5 py-2.5 rounded-xl bg-black/40 border border-[#d4af37]/25 text-xs text-neutral-300 focus:outline-none focus:border-[#d4af37]"
-          >
-            <option value="all" className="bg-[#12141c]">All Categories</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id} className="bg-[#12141c]">
-                {c.name}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3.5 py-2.5 rounded-xl bg-black/40 border border-[#d4af37]/25 text-xs text-neutral-300 focus:outline-none focus:border-[#d4af37]"
-          >
-            <option value="all" className="bg-[#12141c]">All Stock Status</option>
-            <option value="in_stock" className="bg-[#12141c]">In Stock</option>
-            <option value="low_stock" className="bg-[#12141c]">Low Stock</option>
-            <option value="out_of_stock" className="bg-[#12141c]">Out of Stock</option>
-          </select>
-
-          <select
-            value={ordering}
-            onChange={(e) => setOrdering(e.target.value)}
-            className="px-3.5 py-2.5 rounded-xl bg-black/40 border border-[#d4af37]/25 text-xs text-neutral-300 focus:outline-none focus:border-[#d4af37]"
-          >
-            <option value="-created_at" className="bg-[#12141c]">Sort: Newest First</option>
-            <option value="name" className="bg-[#12141c]">Sort: Name (A-Z)</option>
-            <option value="selling_price" className="bg-[#12141c]">Sort: Price (Low → High)</option>
-            <option value="-selling_price" className="bg-[#12141c]">Sort: Price (High → Low)</option>
-            <option value="stock_quantity" className="bg-[#12141c]">Sort: Stock Level</option>
-          </select>
-        </div>
-      </div>
+      </Card>
 
       {/* Products Table */}
-      <div className="card-3d rounded-2xl overflow-hidden border border-[#d4af37]/20">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-[#d4af37]/20 bg-black/40 text-[11px] font-bold uppercase tracking-wider text-neutral-400">
-                <th className="py-3.5 px-4">Product & SKU</th>
-                <th className="py-3.5 px-4">Category</th>
-                <th className="py-3.5 px-4">Cost / Selling Price</th>
-                <th className="py-3.5 px-4">Stock Level</th>
-                <th className="py-3.5 px-4">Status</th>
-                <th className="py-3.5 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#d4af37]/10 text-sm">
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="py-16 text-center text-neutral-400 text-xs">
-                    Loading product catalog...
-                  </td>
-                </tr>
-              ) : products.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-16 text-center">
-                    <Package size={40} className="text-[#d4af37]/40 mx-auto mb-2" />
-                    <p className="text-xs text-neutral-400">No products matching query found.</p>
-                  </td>
-                </tr>
-              ) : (
-                products.map((prod) => {
-                  const isLow = prod.stock_quantity <= prod.minimum_stock && prod.stock_quantity > 0;
-                  const isOut = prod.stock_quantity <= 0;
-
-                  return (
-                    <tr key={prod.id} className="table-row-3d hover:bg-white/[0.02] transition">
-                      {/* Product & SKU */}
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-3">
-                          {prod.image ? (
-                            <img
-                              src={prod.image}
-                              alt={prod.name}
-                              className="w-10 h-10 object-cover rounded-xl border border-[#d4af37]/25 shadow"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-xl bg-black/50 border border-[#d4af37]/20 flex items-center justify-center font-black text-sm text-[#d4af37]">
-                              {prod.name.charAt(0).toUpperCase()}
-                            </div>
-                          )}
-                          <div className="min-w-0">
-                            <div className="font-bold text-white text-xs truncate">{prod.name}</div>
-                            <div className="font-mono text-[11px] text-neutral-500">{prod.sku}</div>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Category */}
-                      <td className="py-3.5 px-4">
-                        <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#d4af37]/10 border border-[#d4af37]/30 text-[#d4af37]">
-                          {prod.category_name || "General"}
-                        </span>
-                      </td>
-
-                      {/* Cost / Selling Price */}
-                      <td className="py-3.5 px-4">
-                        <div className="text-xs">
-                          <div className="font-mono font-bold text-amber-300">
-                            ₹{parseFloat(prod.selling_price).toFixed(2)}
-                          </div>
-                          <div className="font-mono text-[10px] text-neutral-500">
-                            Cost: ₹{parseFloat(prod.purchase_price).toFixed(2)}
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Stock Level */}
-                      <td className="py-3.5 px-4">
-                        <div className="text-xs">
-                          <span
-                            className={`font-mono font-black ${
-                              isOut ? "text-rose-400" : isLow ? "text-amber-300" : "text-emerald-400"
-                            }`}
-                          >
-                            {prod.stock_quantity}
-                          </span>
-                          <span className="text-[10px] text-neutral-500 ml-1">
-                            (Min: {prod.minimum_stock})
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Status */}
-                      <td className="py-3.5 px-4">
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
-                            isOut
-                              ? "bg-rose-500/15 border-rose-500/30 text-rose-400"
-                              : isLow
-                              ? "bg-amber-500/15 border-amber-500/30 text-amber-300"
-                              : "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-                          }`}
-                        >
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              isOut ? "bg-rose-400" : isLow ? "bg-amber-400" : "bg-emerald-400"
-                            }`}
-                          />
-                          {isOut ? "Out of Stock" : isLow ? "Low Stock" : "In Stock"}
-                        </span>
-                      </td>
-
-                      {/* Actions */}
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => setBarcodeModalProduct(prod)}
-                            className="p-1.5 rounded-lg text-neutral-400 hover:text-amber-300 hover:bg-[#d4af37]/10 transition"
-                            title="Generate Barcode"
-                          >
-                            <QrCode size={14} />
-                          </button>
-
-                          {canManage && (
-                            <>
-                              <button
-                                onClick={() => {
-                                  setAdjustModalProduct(prod);
-                                  setAdjustType("add");
-                                  setAdjustQty("");
-                                  setAdjustReason("");
-                                }}
-                                className="p-1.5 rounded-lg text-neutral-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition"
-                                title="Adjust Stock"
-                              >
-                                <Boxes size={14} />
-                              </button>
-
-                              <button
-                                onClick={() => openEditModal(prod)}
-                                className="p-1.5 rounded-lg text-neutral-400 hover:text-[#d4af37] hover:bg-[#d4af37]/10 transition"
-                                title="Edit Product"
-                              >
-                                <Edit size={14} />
-                              </button>
-
-                              <button
-                                onClick={() => setDeleteProduct(prod)}
-                                className="p-1.5 rounded-lg text-neutral-400 hover:text-rose-400 hover:bg-rose-500/10 transition"
-                                title="Delete Product"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* ================= ADD / EDIT PRODUCT MODAL ================= */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="card-3d w-full max-w-2xl rounded-3xl p-6 border-2 border-[#d4af37]/40 shadow-[0_25px_60px_rgba(0,0,0,0.9)] max-h-[90vh] overflow-y-auto relative">
-            <div className="flex items-center justify-between pb-3 border-b border-[#d4af37]/20">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl bg-[#d4af37]/15 border border-[#d4af37]/40 flex items-center justify-center text-[#d4af37]">
-                  <Package size={20} />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-white">
-                    {editingProduct ? `Edit "${editingProduct.name}"` : "Register New Product"}
-                  </h3>
-                  <p className="text-xs text-neutral-400">SKU definition, financial price points, and tax rules.</p>
-                </div>
-              </div>
-              <button onClick={() => setIsModalOpen(false)} className="text-neutral-400 hover:text-white">
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveProduct} className="mt-4 space-y-4 text-xs">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                <div>
-                  <label className="block text-neutral-300 font-semibold mb-1">Product Title *</label>
-                  <input
-                    type="text"
-                    required
-                    name="name"
-                    placeholder="e.g. Organic Almond Milk 1L"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 rounded-xl bg-black/50 border border-[#d4af37]/30 text-white focus:outline-none focus:border-[#d4af37]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-neutral-300 font-semibold mb-1">SKU / Item Code</label>
-                  <input
-                    type="text"
-                    name="sku"
-                    placeholder="Leave blank for auto-generation"
-                    value={formData.sku}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 rounded-xl bg-black/50 border border-[#d4af37]/30 text-white font-mono uppercase focus:outline-none focus:border-[#d4af37]"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                <div>
-                  <label className="block text-neutral-300 font-semibold mb-1">Category</label>
-                  <select
-                    name="category"
-                    value={formData.category}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 rounded-xl bg-black/50 border border-[#d4af37]/30 text-white focus:outline-none focus:border-[#d4af37]"
-                  >
-                    <option value="" className="bg-[#12141c]">Select Category</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id} className="bg-[#12141c]">
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-neutral-300 font-semibold mb-1">Supplier / Vendor</label>
-                  <input
-                    type="text"
-                    name="supplier_name"
-                    placeholder="e.g. Apex Global Distributors"
-                    value={formData.supplier_name}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 rounded-xl bg-black/50 border border-[#d4af37]/30 text-white focus:outline-none focus:border-[#d4af37]"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                <div>
-                  <label className="block text-neutral-300 font-semibold mb-1">Cost Price (₹)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    name="purchase_price"
-                    placeholder="0.00"
-                    value={formData.purchase_price}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 rounded-xl bg-black/50 border border-[#d4af37]/30 text-white font-mono focus:outline-none focus:border-[#d4af37]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-neutral-300 font-semibold mb-1">Selling Price (₹) *</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    required
-                    name="selling_price"
-                    placeholder="0.00"
-                    value={formData.selling_price}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 rounded-xl bg-black/50 border border-[#d4af37]/30 text-amber-300 font-mono font-bold focus:outline-none focus:border-[#d4af37]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-neutral-300 font-semibold mb-1">GST Tax Rate (%)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    name="tax_rate"
-                    value={formData.tax_rate}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 rounded-xl bg-black/50 border border-[#d4af37]/30 text-white font-mono focus:outline-none focus:border-[#d4af37]"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div>
-                  <label className="block text-neutral-300 font-semibold mb-1">Low Stock Threshold</label>
-                  <input
-                    type="number"
-                    min="0"
-                    name="minimum_stock"
-                    value={formData.minimum_stock}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 rounded-xl bg-black/50 border border-[#d4af37]/30 text-white font-mono focus:outline-none focus:border-[#d4af37]"
-                  />
-                </div>
-
-                {!editingProduct && (
-                  <div>
-                    <label className="block text-neutral-300 font-semibold mb-1">Initial Opening Stock</label>
-                    <input
-                      type="number"
-                      min="0"
-                      name="initial_stock"
-                      value={formData.initial_stock}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 rounded-xl bg-black/50 border border-[#d4af37]/30 text-white font-mono focus:outline-none focus:border-[#d4af37]"
+      <Card bodyClassName="p-0">
+        <Table
+          loading={loading}
+          data={products}
+          columns={[
+            {
+              header: "Product Details",
+              key: "name",
+              render: (row) => (
+                <div className="flex items-center gap-3">
+                  {row.image ? (
+                    <img
+                      src={row.image}
+                      alt={row.name}
+                      className="w-10 h-10 rounded-xl object-cover border border-base-300 shrink-0"
                     />
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-neutral-300 font-semibold mb-1">Product Description</label>
-                <textarea
-                  rows={2}
-                  name="description"
-                  placeholder="Ingredients, size specs, batch details..."
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 rounded-xl bg-black/50 border border-[#d4af37]/30 text-white focus:outline-none focus:border-[#d4af37]"
-                />
-              </div>
-
-              {/* Image Upload */}
-              <div className="flex items-center gap-3">
-                <div className="w-14 h-14 rounded-xl bg-black/50 border border-[#d4af37]/30 flex items-center justify-center overflow-hidden shrink-0">
-                  {imagePreview ? (
-                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                   ) : (
-                    <Package size={20} className="text-[#d4af37]/50" />
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shrink-0">
+                      <Package className="w-5 h-5" />
+                    </div>
                   )}
+                  <div className="min-w-0">
+                    <div className="font-bold text-base-content truncate max-w-xs">{row.name}</div>
+                    <div className="flex items-center gap-2 text-xs text-base-content/60 mt-0.5">
+                      <span className="font-mono text-primary font-semibold">{row.sku}</span>
+                      <span>•</span>
+                      <span>{row.category_name || "Uncategorized"}</span>
+                    </div>
+                  </div>
                 </div>
-                <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/40 border border-[#d4af37]/30 text-xs text-[#d4af37] font-semibold hover:bg-[#d4af37]/10 cursor-pointer transition">
-                  <Upload size={13} />
-                  <span>Upload Product Photo</span>
-                  <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-                </label>
-              </div>
-
-              <div className="pt-3 flex justify-end gap-2 border-t border-[#d4af37]/20">
-                <Button3D variant="dark" type="button" onClick={() => setIsModalOpen(false)}>
-                  Cancel
-                </Button3D>
-                <Button3D variant="gold" type="submit" disabled={submitting}>
-                  {submitting ? "Saving..." : editingProduct ? "Save Changes" : "Create Product"}
-                </Button3D>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ================= QUICK ADJUST STOCK MODAL ================= */}
-      {adjustModalProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="card-3d w-full max-w-md rounded-3xl p-6 border-2 border-[#d4af37]/40 shadow-[0_25px_60px_rgba(0,0,0,0.9)] relative">
-            <div className="flex items-center justify-between pb-3 border-b border-[#d4af37]/20">
-              <div className="flex items-center gap-2">
-                <Boxes size={18} className="text-[#d4af37]" />
-                <h3 className="font-bold text-base text-white">Adjust Stock Level</h3>
-              </div>
-              <button onClick={() => setAdjustModalProduct(null)} className="text-neutral-400 hover:text-white">
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleAdjustStock} className="mt-4 space-y-3 text-xs">
-              <div className="p-3 rounded-xl bg-black/50 border border-[#d4af37]/20 flex justify-between items-center">
+              ),
+            },
+            {
+              header: "Selling Price",
+              key: "selling_price",
+              render: (row) => (
                 <div>
-                  <div className="font-bold text-white">{adjustModalProduct.name}</div>
-                  <div className="text-neutral-400 font-mono text-[11px]">{adjustModalProduct.sku}</div>
+                  <span className="font-bold text-base-content">
+                    ₹{Number(row.selling_price || 0).toFixed(2)}
+                  </span>
+                  <div className="text-[10px] text-base-content/50">
+                    Cost: ₹{Number(row.purchase_price || 0).toFixed(2)}
+                  </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-neutral-400">Current Stock</div>
-                  <div className="font-bold font-mono text-amber-300 text-sm">{adjustModalProduct.stock_quantity}</div>
+              ),
+            },
+            {
+              header: "Stock Level",
+              key: "stock_quantity",
+              align: "center",
+              render: (row) => (
+                <div>
+                  <span className="font-extrabold text-sm text-base-content">
+                    {row.stock_quantity}
+                  </span>
+                  <span className="text-[11px] text-base-content/50 block">
+                    Min: {row.minimum_stock}
+                  </span>
                 </div>
-              </div>
+              ),
+            },
+            {
+              header: "Status",
+              key: "status",
+              render: (row) => (
+                <Badge status={row.status}>
+                  {String(row.status || "").replace("_", " ").toUpperCase()}
+                </Badge>
+              ),
+            },
+            {
+              header: "Supplier",
+              key: "supplier_name",
+              render: (row) => (
+                <span className="text-xs text-base-content/70">
+                  {row.supplier_name || "Direct / In-House"}
+                </span>
+              ),
+            },
+            ...(canManage
+              ? [
+                  {
+                    header: "Actions",
+                    key: "actions",
+                    align: "right",
+                    render: (row) => (
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setBarcodeModalProduct(row)}
+                          className="btn btn-ghost btn-xs btn-circle text-primary hover:bg-primary/10"
+                          title="Generate Barcode / QR Label"
+                        >
+                          <QrCode className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAdjustModalProduct(row)}
+                          className="btn btn-ghost btn-xs btn-circle text-base-content/70 hover:text-base-content"
+                          title="Adjust Stock"
+                        >
+                          <Boxes className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(row)}
+                          className="btn btn-ghost btn-xs btn-circle text-base-content/70 hover:text-base-content"
+                          title="Edit Product"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => setDeleteProduct(row)}
+                            className="btn btn-ghost btn-xs btn-circle text-error hover:bg-error/10"
+                            title="Delete Product"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ),
+                  },
+                ]
+              : []),
+          ]}
+          emptyMessage="No products found"
+          emptyDescription="Try adjusting your search criteria or register a new product."
+          emptyAction={
+            canManage && (
+              <Button variant="gold" size="sm" icon={Plus} onClick={openCreateModal}>
+                Add First Product
+              </Button>
+            )
+          }
+        />
+      </Card>
 
-              <div className="grid grid-cols-2 gap-2">
+      {/* Add / Edit Product Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingProduct ? "Edit Product" : "Register New Product"}
+        subtitle="Catalog specifications, pricing calculations, and inventory thresholds"
+        maxWidth="max-w-2xl"
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Product Name"
+              placeholder="e.g. Wireless Barcode Scanner"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+              autoFocus
+            />
+
+            <div>
+              <div className="flex items-center justify-between pb-1.5">
+                <label className="text-xs font-semibold text-base-content/90 flex items-center gap-1">
+                  SKU / Barcode Code <span className="text-error font-bold">*</span>
+                </label>
                 <button
                   type="button"
-                  onClick={() => setAdjustType("add")}
-                  className={`py-2 rounded-xl font-bold border transition ${
-                    adjustType === "add"
-                      ? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
-                      : "bg-black/40 border-neutral-800 text-neutral-400"
-                  }`}
+                  onClick={handleGenerateSku}
+                  className="text-primary text-[10px] font-bold hover:underline inline-flex items-center gap-0.5"
                 >
-                  + Add Stock (Received)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAdjustType("reduce")}
-                  className={`py-2 rounded-xl font-bold border transition ${
-                    adjustType === "reduce"
-                      ? "bg-rose-500/20 border-rose-500 text-rose-400"
-                      : "bg-black/40 border-neutral-800 text-neutral-400"
-                  }`}
-                >
-                  - Deduct (Damage/Loss)
+                  <Sparkles className="w-3 h-3" />
+                  Auto-Gen SKU
                 </button>
               </div>
-
-              <div>
-                <label className="block text-neutral-300 font-semibold mb-1">Adjustment Quantity</label>
-                <input
-                  type="number"
-                  min="1"
-                  required
-                  placeholder="e.g. 25"
-                  value={adjustQty}
-                  onChange={(e) => setAdjustQty(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-black/60 border border-[#d4af37]/30 text-white font-mono focus:outline-none focus:border-[#d4af37]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-neutral-300 font-semibold mb-1">Reason / Reference</label>
-                <input
-                  type="text"
-                  placeholder="Supplier shipment, damaged freight, audit..."
-                  value={adjustReason}
-                  onChange={(e) => setAdjustReason(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-black/60 border border-[#d4af37]/30 text-white focus:outline-none focus:border-[#d4af37]"
-                />
-              </div>
-
-              <div className="pt-3 flex justify-end gap-2 border-t border-[#d4af37]/20">
-                <Button3D variant="dark" type="button" onClick={() => setAdjustModalProduct(null)}>
-                  Cancel
-                </Button3D>
-                <Button3D variant="gold" type="submit" disabled={adjusting}>
-                  {adjusting ? "Updating..." : "Commit Stock"}
-                </Button3D>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ================= DELETE CONFIRMATION MODAL ================= */}
-      {deleteProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="card-3d w-full max-w-md rounded-3xl p-6 border-2 border-rose-500/40 shadow-[0_25px_60px_rgba(0,0,0,0.9)] relative">
-            <div className="flex items-center gap-2.5 pb-3 border-b border-rose-500/20">
-              <div className="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/40 flex items-center justify-center text-rose-400">
-                <AlertTriangle size={20} />
-              </div>
-              <div>
-                <h3 className="font-bold text-base text-white">Purge Catalog Product</h3>
-                <p className="text-xs text-neutral-400">Irreversible item deletion</p>
-              </div>
-            </div>
-
-            <p className="text-xs text-neutral-300 mt-4 leading-relaxed">
-              Are you sure you want to permanently delete{" "}
-              <strong className="text-white">"{deleteProduct.name}"</strong> (SKU:{" "}
-              <span className="font-mono text-[#d4af37]">{deleteProduct.sku}</span>)?
-              Any past sales invoices referring to this product will retain historic text snapshots.
-            </p>
-
-            <div className="mt-5 flex items-center justify-end gap-2 pt-3 border-t border-[#d4af37]/20">
-              <Button3D variant="dark" onClick={() => setDeleteProduct(null)}>
-                Cancel
-              </Button3D>
-              <Button3D variant="danger" onClick={handleDeleteProduct} disabled={deleting}>
-                {deleting ? "Purging..." : "Confirm Purge"}
-              </Button3D>
+              <input
+                type="text"
+                placeholder="e.g. PRD-89421"
+                value={formData.sku}
+                onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                required
+                className="input input-bordered input-sm w-full rounded-xl bg-base-100 font-mono"
+              />
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Barcode Modal Integration */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Select
+              label="Category"
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              required
+            >
+              <option value="">Select Category</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </Select>
+
+            <Input
+              label="Supplier / Vendor"
+              placeholder="e.g. Apex Electronics Ltd"
+              value={formData.supplier_name}
+              onChange={(e) => setFormData({ ...formData, supplier_name: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Input
+              label="Purchase Cost (₹)"
+              type="number"
+              step="0.01"
+              placeholder="0.00"
+              value={formData.purchase_price}
+              onChange={(e) => setFormData({ ...formData, purchase_price: e.target.value })}
+              required
+            />
+            <Input
+              label="Selling Price (₹)"
+              type="number"
+              step="0.01"
+              placeholder="0.00"
+              value={formData.selling_price}
+              onChange={(e) => setFormData({ ...formData, selling_price: e.target.value })}
+              required
+            />
+            <Input
+              label="GST Tax Rate (%)"
+              type="number"
+              step="0.01"
+              placeholder="18.00"
+              value={formData.tax_rate}
+              onChange={(e) => setFormData({ ...formData, tax_rate: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Minimum Stock Warning Threshold"
+              type="number"
+              placeholder="5"
+              value={formData.minimum_stock}
+              onChange={(e) => setFormData({ ...formData, minimum_stock: e.target.value })}
+            />
+            {!editingProduct && (
+              <Input
+                label="Initial Stock Quantity"
+                type="number"
+                placeholder="0"
+                value={formData.initial_stock}
+                onChange={(e) => setFormData({ ...formData, initial_stock: e.target.value })}
+              />
+            )}
+          </div>
+
+          {/* Image Upload */}
+          <div>
+            <label className="text-xs font-semibold text-base-content/90 block mb-1.5">
+              Product Image (Optional)
+            </label>
+            <div className="flex items-center gap-4">
+              {imagePreview && (
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="w-16 h-16 rounded-xl object-cover border border-base-300"
+                />
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="file-input file-input-bordered file-input-sm w-full rounded-xl bg-base-100 text-xs"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4 border-t border-base-300/40">
+            <Button variant="ghost" onClick={() => setIsModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="gold" loading={submitting}>
+              {editingProduct ? "Save Changes" : "Create Product"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Stock Adjustment Modal */}
+      <Modal
+        isOpen={!!adjustModalProduct}
+        onClose={() => setAdjustModalProduct(null)}
+        title="Adjust Inventory Stock"
+        subtitle={`Current stock for "${adjustModalProduct?.name}": ${adjustModalProduct?.stock_quantity} units`}
+      >
+        <form onSubmit={handleAdjustStock} className="space-y-4">
+          <Select
+            label="Adjustment Type"
+            value={adjustType}
+            onChange={(e) => setAdjustType(e.target.value)}
+            options={[
+              { value: "add", label: "Stock In (+ Add units)" },
+              { value: "remove", label: "Stock Out (- Remove units)" },
+              { value: "set", label: "Physical Inventory Count (= Set exact count)" },
+            ]}
+          />
+
+          <Input
+            label="Adjustment Quantity"
+            type="number"
+            min="1"
+            placeholder="e.g. 25"
+            value={adjustQty}
+            onChange={(e) => setAdjustQty(e.target.value)}
+            required
+            autoFocus
+          />
+
+          <Input
+            label="Reason / Notes"
+            placeholder="e.g. Received new shipment from vendor, damaged item, etc."
+            value={adjustReason}
+            onChange={(e) => setAdjustReason(e.target.value)}
+          />
+
+          <div className="flex justify-end gap-2 pt-3">
+            <Button variant="ghost" onClick={() => setAdjustModalProduct(null)}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" loading={adjusting}>
+              Confirm Adjustment
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Barcode Modal */}
       {barcodeModalProduct && (
         <ProductBarcodeModal
           product={barcodeModalProduct}
           onClose={() => setBarcodeModalProduct(null)}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={!!deleteProduct}
+        onClose={() => setDeleteProduct(null)}
+        title="Delete Product"
+        subtitle={`Are you sure you want to delete "${deleteProduct?.name}"?`}
+        actions={
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setDeleteProduct(null)}>
+              Cancel
+            </Button>
+            <Button variant="danger" size="sm" onClick={handleDeleteProduct} loading={deleting}>
+              Delete Product
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-xs text-base-content/70">
+          This operation permanently removes the product from the catalog. Historical sales invoices
+          and audit logs will retain their existing line item records.
+        </p>
+      </Modal>
     </div>
   );
 }

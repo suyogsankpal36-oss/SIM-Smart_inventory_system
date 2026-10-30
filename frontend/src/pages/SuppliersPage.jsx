@@ -2,12 +2,9 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import {
   AlertCircle,
-  Building,
-  Calendar,
   CheckCircle,
   CreditCard,
   Edit,
-  FileText,
   Mail,
   MapPin,
   Phone,
@@ -18,19 +15,17 @@ import {
   Trash2,
   Truck,
   User,
-  X,
 } from "lucide-react";
 import supplierService from "../services/supplierService";
 import { useAuth } from "../context/AuthContext";
-import Tilt3D from "../components/3d/Tilt3D";
-import Button3D from "../components/3d/Button3D";
+import { Badge, Button, Card, Input, Modal, Select, StatsCard, Table } from "../components/ui";
 
 const PAYMENT_TERMS_CONFIG = {
-  immediate: { label: "Immediate / Cash", color: "#34d399", border: "rgba(16, 185, 129, 0.4)", bg: "rgba(16, 185, 129, 0.15)" },
-  net_15: { label: "Net 15 Days", color: "#f7df8f", border: "rgba(212, 175, 55, 0.4)", bg: "rgba(212, 175, 55, 0.15)" },
-  net_30: { label: "Net 30 Days", color: "#d4af37", border: "rgba(212, 175, 55, 0.5)", bg: "rgba(212, 175, 55, 0.2)" },
-  net_60: { label: "Net 60 Days", color: "#f59e0b", border: "rgba(245, 158, 11, 0.4)", bg: "rgba(245, 158, 11, 0.15)" },
-  advance: { label: "Advance Payment", color: "#fbbf24", border: "rgba(251, 191, 36, 0.4)", bg: "rgba(251, 191, 36, 0.15)" },
+  immediate: { label: "Immediate / Cash", color: "badge-success" },
+  net_15: { label: "Net 15 Days", color: "badge-primary" },
+  net_30: { label: "Net 30 Days", color: "badge-warning" },
+  net_60: { label: "Net 60 Days", color: "badge-secondary" },
+  advance: { label: "Advance Payment", color: "badge-accent" },
 };
 
 export default function SuppliersPage() {
@@ -208,820 +203,406 @@ export default function SuppliersPage() {
   const gstCount = suppliers.filter((s) => Boolean(s.gst_number)).length;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.75rem" }}>
+    <div className="space-y-6">
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "1rem" }}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 style={{ fontSize: "1.75rem", fontWeight: 800, margin: 0 }} className="text-gradient-gold">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-base-content tracking-tight">
             Suppliers & Vendors
           </h1>
-          <p style={{ color: "#a39d91", fontSize: "0.875rem", marginTop: "0.35rem" }}>
+          <p className="text-sm text-base-content/70 mt-1">
             Manage wholesale vendors, distribution contracts, credit payment terms, and procurement supply chains.
           </p>
         </div>
-        <div style={{ display: "flex", gap: "0.75rem" }}>
-          <Button3D
-            variant="dark"
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
             size="sm"
             icon={RefreshCw}
             onClick={() => fetchSuppliers(true)}
             loading={refreshing}
           >
             Refresh
-          </Button3D>
+          </Button>
           {canEdit && (
-            <Button3D
-              variant="gold"
+            <Button
+              variant="primary"
+              size="sm"
               icon={Plus}
               onClick={openCreateModal}
             >
               Add Supplier
-            </Button3D>
+            </Button>
           )}
         </div>
       </div>
 
-      {/* KPI Cards Grid */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "1.25rem",
-        }}
-      >
-        <Tilt3D scale={1.03} maxTilt={10}>
-          <div
-            className="card-3d card-3d-interactive"
-            style={{
-              padding: "1.25rem",
-              display: "flex",
-              alignItems: "center",
-              gap: "1rem",
-              borderRadius: "14px",
-            }}
-          >
-            <div
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: "12px",
-                background: "linear-gradient(135deg, rgba(212, 175, 55, 0.25) 0%, rgba(153, 101, 21, 0.15) 100%)",
-                border: "1px solid rgba(212, 175, 55, 0.4)",
-                color: "#d4af37",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transform: "translateZ(18px)",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
-              }}
-            >
-              <Truck size={24} />
-            </div>
-            <div style={{ transform: "translateZ(14px)" }}>
-              <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#a39d91", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                Total Suppliers
-              </div>
-              <div style={{ fontSize: "1.65rem", fontWeight: 800, color: "#f5f3ef" }}>{totalCount}</div>
-            </div>
-          </div>
-        </Tilt3D>
-
-        <Tilt3D scale={1.03} maxTilt={10}>
-          <div
-            className="card-3d card-3d-interactive"
-            style={{
-              padding: "1.25rem",
-              display: "flex",
-              alignItems: "center",
-              gap: "1rem",
-              borderRadius: "14px",
-            }}
-          >
-            <div
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: "12px",
-                background: "linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.15) 100%)",
-                border: "1px solid rgba(16, 185, 129, 0.4)",
-                color: "#10b981",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transform: "translateZ(18px)",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
-              }}
-            >
-              <CheckCircle size={24} />
-            </div>
-            <div style={{ transform: "translateZ(14px)" }}>
-              <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#a39d91", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                Active Partners
-              </div>
-              <div style={{ fontSize: "1.65rem", fontWeight: 800, color: "#10b981" }}>{activeCount}</div>
-            </div>
-          </div>
-        </Tilt3D>
-
-        <Tilt3D scale={1.03} maxTilt={10}>
-          <div
-            className="card-3d card-3d-interactive"
-            style={{
-              padding: "1.25rem",
-              display: "flex",
-              alignItems: "center",
-              gap: "1rem",
-              borderRadius: "14px",
-            }}
-          >
-            <div
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: "12px",
-                background: "linear-gradient(135deg, rgba(212, 175, 55, 0.3) 0%, rgba(180, 130, 15, 0.2) 100%)",
-                border: "1px solid rgba(212, 175, 55, 0.5)",
-                color: "#f7df8f",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transform: "translateZ(18px)",
-                boxShadow: "0 4px 14px rgba(212, 175, 55, 0.25)",
-              }}
-            >
-              <CreditCard size={24} />
-            </div>
-            <div style={{ transform: "translateZ(14px)" }}>
-              <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#a39d91", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                Credit Vendors
-              </div>
-              <div style={{ fontSize: "1.65rem", fontWeight: 800 }} className="text-gradient-gold">
-                {creditCount}
-              </div>
-            </div>
-          </div>
-        </Tilt3D>
-
-        <Tilt3D scale={1.03} maxTilt={10}>
-          <div
-            className="card-3d card-3d-interactive"
-            style={{
-              padding: "1.25rem",
-              display: "flex",
-              alignItems: "center",
-              gap: "1rem",
-              borderRadius: "14px",
-            }}
-          >
-            <div
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: "12px",
-                background: "linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(217, 119, 6, 0.15) 100%)",
-                border: "1px solid rgba(245, 158, 11, 0.4)",
-                color: "#f59e0b",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transform: "translateZ(18px)",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
-              }}
-            >
-              <ShieldCheck size={24} />
-            </div>
-            <div style={{ transform: "translateZ(14px)" }}>
-              <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#a39d91", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                GSTIN Verified
-              </div>
-              <div style={{ fontSize: "1.65rem", fontWeight: 800, color: "#f59e0b" }}>{gstCount}</div>
-            </div>
-          </div>
-        </Tilt3D>
+      {/* KPI Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatsCard
+          title="Total Suppliers"
+          value={totalCount}
+          icon={Truck}
+          color="primary"
+          description="Registered vendors"
+        />
+        <StatsCard
+          title="Active Partners"
+          value={activeCount}
+          icon={CheckCircle}
+          color="accent"
+          description="Operational accounts"
+        />
+        <StatsCard
+          title="Credit Vendors"
+          value={creditCount}
+          icon={CreditCard}
+          color="secondary"
+          description="Net 15/30/60 terms"
+        />
+        <StatsCard
+          title="GSTIN Verified"
+          value={gstCount}
+          icon={ShieldCheck}
+          color="accent"
+          description="Tax compliant entities"
+        />
       </div>
 
       {/* Filter and Search Bar */}
-      <div
-        className="card-3d-glass"
-        style={{
-          padding: "1rem 1.25rem",
-          display: "flex",
-          gap: "1rem",
-          flexWrap: "wrap",
-          alignItems: "center",
-          justifyContent: "space-between",
-          borderRadius: "14px",
-        }}
-      >
-        <div style={{ position: "relative", flex: "1 1 280px" }}>
-          <Search
-            size={18}
-            style={{
-              position: "absolute",
-              left: "0.85rem",
-              top: "50%",
-              transform: "translateY(-50%)",
-              color: "#d4af37",
-            }}
-          />
-          <input
-            type="text"
-            placeholder="Search company, contact person, phone, email, GSTIN..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "0.6rem 0.85rem 0.6rem 2.4rem",
-              borderRadius: "8px",
-              fontSize: "0.875rem",
-            }}
-          />
-        </div>
+      <Card>
+        <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-base-content/40 w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Search company, contact person, phone, email, GSTIN..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="input input-bordered input-sm w-full pl-10 bg-base-100"
+            />
+          </div>
 
-        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
-          <select
-            value={termsFilter}
-            onChange={(e) => setTermsFilter(e.target.value)}
-            style={{
-              padding: "0.6rem 0.85rem",
-              borderRadius: "8px",
-              fontSize: "0.875rem",
-            }}
-          >
-            <option value="">All Payment Terms</option>
-            <option value="immediate">Immediate / Cash</option>
-            <option value="net_15">Net 15 Days</option>
-            <option value="net_30">Net 30 Days</option>
-            <option value="net_60">Net 60 Days</option>
-            <option value="advance">Advance Payment</option>
-          </select>
-
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            style={{
-              padding: "0.6rem 0.85rem",
-              borderRadius: "8px",
-              fontSize: "0.875rem",
-            }}
-          >
-            <option value="">All Statuses</option>
-            <option value="active">Active Only</option>
-            <option value="inactive">Inactive Only</option>
-          </select>
-
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.3rem",
-                padding: "0.6rem 0.85rem",
-                borderRadius: "8px",
-                border: "1px solid rgba(212, 175, 55, 0.3)",
-                background: "rgba(212, 175, 55, 0.1)",
-                color: "#d4af37",
-                cursor: "pointer",
-                fontWeight: 600,
-                fontSize: "0.875rem",
-              }}
+          <div className="flex flex-wrap items-center gap-3">
+            <select
+              value={termsFilter}
+              onChange={(e) => setTermsFilter(e.target.value)}
+              className="select select-bordered select-sm bg-base-100"
             >
-              <X size={15} />
-              <span>Reset</span>
-            </button>
-          )}
+              <option value="">All Payment Terms</option>
+              <option value="immediate">Immediate / Cash</option>
+              <option value="net_15">Net 15 Days</option>
+              <option value="net_30">Net 30 Days</option>
+              <option value="net_60">Net 60 Days</option>
+              <option value="advance">Advance Payment</option>
+            </select>
+
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="select select-bordered select-sm bg-base-100"
+            >
+              <option value="">All Statuses</option>
+              <option value="active">Active Only</option>
+              <option value="inactive">Inactive Only</option>
+            </select>
+
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                Clear
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      </Card>
 
       {/* Suppliers Table */}
-      <div
-        className="card-3d"
-        style={{
-          borderRadius: "14px",
-          overflow: "hidden",
-        }}
-      >
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
-            <thead>
-              <tr style={{ background: "rgba(18, 20, 28, 0.95)", borderBottom: "1px solid rgba(212, 175, 55, 0.2)" }}>
-                <th style={{ padding: "1rem", fontSize: "0.75rem", fontWeight: 800, color: "#d4af37", letterSpacing: "0.05em" }}>
-                  COMPANY / VENDOR
-                </th>
-                <th style={{ padding: "1rem", fontSize: "0.75rem", fontWeight: 800, color: "#d4af37", letterSpacing: "0.05em" }}>
-                  CONTACT PERSON
-                </th>
-                <th style={{ padding: "1rem", fontSize: "0.75rem", fontWeight: 800, color: "#d4af37", letterSpacing: "0.05em" }}>
-                  PHONE & EMAIL
-                </th>
-                <th style={{ padding: "1rem", fontSize: "0.75rem", fontWeight: 800, color: "#d4af37", letterSpacing: "0.05em" }}>
-                  LOCATION
-                </th>
-                <th style={{ padding: "1rem", fontSize: "0.75rem", fontWeight: 800, color: "#d4af37", letterSpacing: "0.05em" }}>
-                  GSTIN
-                </th>
-                <th style={{ padding: "1rem", fontSize: "0.75rem", fontWeight: 800, color: "#d4af37", letterSpacing: "0.05em" }}>
-                  PAYMENT TERMS
-                </th>
-                <th style={{ padding: "1rem", fontSize: "0.75rem", fontWeight: 800, color: "#d4af37", letterSpacing: "0.05em" }}>
-                  STATUS
-                </th>
-                <th
-                  style={{
-                    padding: "1rem",
-                    fontSize: "0.75rem",
-                    fontWeight: 800,
-                    color: "#d4af37",
-                    textAlign: "right",
-                    letterSpacing: "0.05em",
-                  }}
-                >
-                  ACTIONS
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={8} style={{ padding: "3.5rem", textAlign: "center", color: "#a39d91" }}>
-                    Loading suppliers directory...
-                  </td>
-                </tr>
-              ) : suppliers.length === 0 ? (
-                <tr>
-                  <td colSpan={8} style={{ padding: "3.5rem", textAlign: "center" }}>
-                    <Truck size={44} style={{ color: "rgba(212, 175, 55, 0.4)", margin: "0 auto 0.75rem" }} />
-                    <p style={{ color: "#a39d91", fontWeight: 600, margin: 0 }}>No suppliers found.</p>
-                    {canEdit && (
-                      <Button3D
-                        variant="gold"
-                        size="sm"
-                        onClick={openCreateModal}
-                        style={{ marginTop: "1rem" }}
-                      >
-                        + Add your first supplier
-                      </Button3D>
-                    )}
-                  </td>
-                </tr>
-              ) : (
-                suppliers.map((s) => {
-                  const term = PAYMENT_TERMS_CONFIG[s.payment_terms] || PAYMENT_TERMS_CONFIG.net_30;
-                  return (
-                    <tr
-                      key={s.id}
-                      className="table-row-3d"
-                      style={{ borderBottom: "1px solid rgba(212, 175, 55, 0.12)" }}
+      <Table
+        loading={loading}
+        data={suppliers}
+        emptyTitle="No suppliers found"
+        emptyDescription={
+          hasActiveFilters
+            ? "Try clearing your search query or filters."
+            : "Get started by adding your first wholesale supplier or vendor."
+        }
+        emptyAction={
+          canEdit && !hasActiveFilters ? (
+            <Button variant="primary" size="sm" icon={Plus} onClick={openCreateModal}>
+              Add Supplier
+            </Button>
+          ) : null
+        }
+        columns={[
+          {
+            header: "Company & Contact",
+            render: (s) => (
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-base shrink-0 border border-primary/20">
+                  {s.name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <div className="font-bold text-base-content leading-snug">{s.name}</div>
+                  {s.contact_person ? (
+                    <div className="text-xs text-base-content/60 flex items-center gap-1 mt-0.5">
+                      <User size={12} /> {s.contact_person}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-base-content/40 italic">No contact specified</div>
+                  )}
+                </div>
+              </div>
+            ),
+          },
+          {
+            header: "Contact Details",
+            render: (s) => (
+              <div className="space-y-1 text-xs">
+                <div className="flex items-center gap-1.5 text-base-content/80 font-medium">
+                  <Phone size={12} className="text-primary shrink-0" />
+                  <span>{s.phone}</span>
+                </div>
+                {s.email && (
+                  <div className="flex items-center gap-1.5 text-base-content/60">
+                    <Mail size={12} className="shrink-0" />
+                    <span className="truncate max-w-[160px]">{s.email}</span>
+                  </div>
+                )}
+              </div>
+            ),
+          },
+          {
+            header: "Location",
+            render: (s) => (
+              <div className="text-xs">
+                {s.city || s.state ? (
+                  <div className="flex items-center gap-1 text-base-content/80">
+                    <MapPin size={12} className="text-base-content/50 shrink-0" />
+                    <span>
+                      {[s.city, s.state].filter(Boolean).join(", ")}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-base-content/40 italic">Not set</span>
+                )}
+              </div>
+            ),
+          },
+          {
+            header: "Payment Terms",
+            render: (s) => {
+              const term = PAYMENT_TERMS_CONFIG[s.payment_terms] || {
+                label: s.payment_terms || "Standard",
+                color: "badge-ghost",
+              };
+              return (
+                <span className={`badge ${term.color} badge-sm font-semibold`}>
+                  {term.label}
+                </span>
+              );
+            },
+          },
+          {
+            header: "Tax & Compliance",
+            render: (s) => (
+              <div className="text-xs font-mono">
+                {s.gst_number ? (
+                  <span className="badge badge-outline badge-sm border-base-content/20 text-base-content/80">
+                    {s.gst_number}
+                  </span>
+                ) : (
+                  <span className="text-base-content/40 italic">Unregistered</span>
+                )}
+              </div>
+            ),
+          },
+          {
+            header: "Status",
+            render: (s) => <Badge status={s.status} />,
+          },
+          {
+            header: "Actions",
+            className: "text-right",
+            render: (s) => (
+              <div className="flex items-center justify-end gap-1">
+                {canEdit && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="btn-square btn-xs"
+                      onClick={() => openEditModal(s)}
+                      title="Edit Supplier"
                     >
-                      <td style={{ padding: "1rem" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                          <div
-                            style={{
-                              width: 38,
-                              height: 38,
-                              borderRadius: "10px",
-                              background: "linear-gradient(135deg, rgba(212, 175, 55, 0.25) 0%, rgba(153, 101, 21, 0.15) 100%)",
-                              border: "1px solid rgba(212, 175, 55, 0.3)",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              color: "#d4af37",
-                              fontWeight: 800,
-                              boxShadow: "0 3px 8px rgba(0,0,0,0.5)",
-                            }}
-                          >
-                            <Building size={18} />
-                          </div>
-                          <div>
-                            <div style={{ fontWeight: 700, color: "#f7df8f", fontSize: "0.875rem" }}>{s.name}</div>
-                            {s.notes && <div style={{ fontSize: "0.75rem", color: "#a39d91" }}>{s.notes}</div>}
-                          </div>
-                        </div>
-                      </td>
-
-                      <td style={{ padding: "1rem" }}>
-                        {s.contact_person ? (
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "#f5f3ef", fontSize: "0.875rem" }}>
-                            <User size={14} color="#d4af37" />
-                            <span>{s.contact_person}</span>
-                          </div>
-                        ) : (
-                          <span style={{ color: "#686358" }}>—</span>
-                        )}
-                      </td>
-
-                      <td style={{ padding: "1rem", fontSize: "0.8125rem" }}>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                          <a href={`tel:${s.phone}`} style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "#e5e7eb" }}>
-                            <Phone size={13} color="#d4af37" />
-                            <span>{s.phone}</span>
-                          </a>
-                          {s.email && (
-                            <a href={`mailto:${s.email}`} style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "#a39d91" }}>
-                              <Mail size={13} color="#a39d91" />
-                              <span>{s.email}</span>
-                            </a>
-                          )}
-                        </div>
-                      </td>
-
-                      <td style={{ padding: "1rem", fontSize: "0.8125rem" }}>
-                        {s.city || s.state ? (
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "#e5e7eb" }}>
-                            <MapPin size={13} color="#d4af37" />
-                            <span>{[s.city, s.state].filter(Boolean).join(", ")}</span>
-                          </div>
-                        ) : (
-                          <span style={{ color: "#686358" }}>—</span>
-                        )}
-                      </td>
-
-                      <td style={{ padding: "1rem" }}>
-                        {s.gst_number ? (
-                          <span
-                            className="badge-3d"
-                            style={{
-                              background: "rgba(212, 175, 55, 0.12)",
-                              color: "#f7df8f",
-                              border: "1px solid rgba(212, 175, 55, 0.3)",
-                              fontSize: "0.75rem",
-                              fontWeight: 700,
-                            }}
-                          >
-                            {s.gst_number}
-                          </span>
-                        ) : (
-                          <span style={{ color: "#686358", fontSize: "0.8125rem" }}>Unregistered</span>
-                        )}
-                      </td>
-
-                      <td style={{ padding: "1rem" }}>
-                        <span
-                          className="badge-3d"
-                          style={{
-                            background: term.bg,
-                            color: term.color,
-                            border: `1px solid ${term.border}`,
-                          }}
-                        >
-                          {term.label}
-                        </span>
-                      </td>
-
-                      <td style={{ padding: "1rem" }}>
-                        <span
-                          className="badge-3d"
-                          style={{
-                            background: s.status === "active" ? "rgba(16, 185, 129, 0.2)" : "rgba(148, 163, 184, 0.2)",
-                            color: s.status === "active" ? "#34d399" : "#a39d91",
-                            border: `1px solid ${s.status === "active" ? "rgba(16, 185, 129, 0.4)" : "rgba(148, 163, 184, 0.3)"}`,
-                          }}
-                        >
-                          {s.status === "active" ? <CheckCircle size={12} /> : <X size={12} />}
-                          {s.status === "active" ? "Active" : "Inactive"}
-                        </span>
-                      </td>
-
-                      <td style={{ padding: "1rem", textAlign: "right" }}>
-                        <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.4rem" }}>
-                          {canEdit && (
-                            <Button3D
-                              variant="dark"
-                              size="sm"
-                              icon={Edit}
-                              onClick={() => openEditModal(s)}
-                              title="Edit Supplier"
-                            />
-                          )}
-                          {isAdmin && (
-                            <Button3D
-                              variant="danger"
-                              size="sm"
-                              icon={Trash2}
-                              onClick={() => setDeleteTarget(s)}
-                              title="Delete Supplier"
-                            />
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Add / Edit Supplier Modal */}
-      {isModalOpen && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0, 0, 0, 0.8)",
-            backdropFilter: "blur(6px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 60,
-            padding: "1rem",
-            perspective: "1200px",
-          }}
-          onClick={() => !submitting && setIsModalOpen(false)}
-        >
-          <div
-            className="card-3d"
-            style={{
-              width: "100%",
-              maxWidth: "600px",
-              maxHeight: "88vh",
-              overflowY: "auto",
-              borderRadius: "16px",
-              animation: "perspectiveSlideIn 0.35s ease forwards",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "1.25rem 1.5rem",
-                borderBottom: "1px solid rgba(212, 175, 55, 0.25)",
-              }}
-            >
-              <h2 style={{ fontSize: "1.2rem", fontWeight: 800, margin: 0 }} className="text-gradient-gold">
-                {editingSupplier ? `Edit Supplier: ${editingSupplier.name}` : "Add New Supplier"}
-              </h2>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                style={{ background: "none", border: "none", color: "#d4af37", cursor: "pointer" }}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} style={{ padding: "1.75rem" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.1rem" }}>
-                <div style={{ gridColumn: "1 / -1" }}>
-                  <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 700, color: "#d4af37", marginBottom: "0.4rem" }}>
-                    Company / Supplier Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Apex Global Distributors Pvt Ltd"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "0.65rem 0.85rem",
-                      borderRadius: "8px",
-                      fontSize: "0.875rem",
-                    }}
-                  />
-                  {formErrors.name && <div style={{ color: "#ef4444", fontSize: "0.75rem", marginTop: "0.25rem" }}>{formErrors.name}</div>}
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 700, color: "#d4af37", marginBottom: "0.4rem" }}>
-                    Contact Person
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Rajesh Kumar"
-                    value={formData.contact_person}
-                    onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "0.65rem 0.85rem",
-                      borderRadius: "8px",
-                      fontSize: "0.875rem",
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 700, color: "#d4af37", marginBottom: "0.4rem" }}>
-                    Phone Number *
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    placeholder="+91 98765 43210"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "0.65rem 0.85rem",
-                      borderRadius: "8px",
-                      fontSize: "0.875rem",
-                    }}
-                  />
-                  {formErrors.phone && <div style={{ color: "#ef4444", fontSize: "0.75rem", marginTop: "0.25rem" }}>{formErrors.phone}</div>}
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 700, color: "#d4af37", marginBottom: "0.4rem" }}>
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    placeholder="vendor@company.com"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "0.65rem 0.85rem",
-                      borderRadius: "8px",
-                      fontSize: "0.875rem",
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 700, color: "#d4af37", marginBottom: "0.4rem" }}>
-                    GSTIN / Tax ID
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="27AAAAA0000A1Z5"
-                    value={formData.gst_number}
-                    onChange={(e) => setFormData({ ...formData, gst_number: e.target.value.toUpperCase() })}
-                    style={{
-                      width: "100%",
-                      padding: "0.65rem 0.85rem",
-                      borderRadius: "8px",
-                      fontSize: "0.875rem",
-                      textTransform: "uppercase",
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 700, color: "#d4af37", marginBottom: "0.4rem" }}>
-                    Payment Terms
-                  </label>
-                  <select
-                    value={formData.payment_terms}
-                    onChange={(e) => setFormData({ ...formData, payment_terms: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "0.65rem 0.85rem",
-                      borderRadius: "8px",
-                      fontSize: "0.875rem",
-                    }}
-                  >
-                    <option value="immediate">Immediate / Cash</option>
-                    <option value="net_15">Net 15 Days</option>
-                    <option value="net_30">Net 30 Days</option>
-                    <option value="net_60">Net 60 Days</option>
-                    <option value="advance">Advance Payment</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 700, color: "#d4af37", marginBottom: "0.4rem" }}>
-                    Status
-                  </label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "0.65rem 0.85rem",
-                      borderRadius: "8px",
-                      fontSize: "0.875rem",
-                    }}
-                  >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
-                </div>
-
-                <div style={{ gridColumn: "1 / -1" }}>
-                  <label style={{ display: "block", fontSize: "0.875rem", fontWeight: 700, color: "#d4af37", marginBottom: "0.4rem" }}>
-                    Street Address & Location
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Warehouse 12, Industrial Area, City, State"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "0.65rem 0.85rem",
-                      borderRadius: "8px",
-                      fontSize: "0.875rem",
-                    }}
-                  />
-                </div>
+                      <Edit size={14} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="btn-square btn-xs text-error hover:bg-error/10"
+                      onClick={() => setDeleteTarget(s)}
+                      title="Delete Supplier"
+                    >
+                      <Trash2 size={14} />
+                    </Button>
+                  </>
+                )}
               </div>
+            ),
+          },
+        ]}
+      />
 
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  gap: "0.75rem",
-                  marginTop: "2rem",
-                  borderTop: "1px solid rgba(212, 175, 55, 0.2)",
-                  paddingTop: "1.25rem",
-                }}
-              >
-                <Button3D
-                  variant="dark"
-                  onClick={() => setIsModalOpen(false)}
-                  disabled={submitting}
-                >
-                  Cancel
-                </Button3D>
-                <Button3D
-                  variant="gold"
-                  type="submit"
-                  loading={submitting}
-                >
-                  {editingSupplier ? "Update Supplier" : "Save Supplier"}
-                </Button3D>
-              </div>
-            </form>
+      {/* Create / Edit Supplier Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingSupplier ? `Edit Supplier: ${editingSupplier.name}` : "Add Wholesale Supplier"}
+        maxWidth="max-w-2xl"
+      >
+        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Company / Vendor Name"
+              required
+              placeholder="e.g. Apex Global Distributors"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              error={formErrors.name}
+            />
+            <Input
+              label="Contact Person Name"
+              placeholder="e.g. Michael Scott"
+              value={formData.contact_person}
+              onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
+            />
           </div>
-        </div>
-      )}
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Input
+              label="Phone Number"
+              required
+              placeholder="e.g. +91 9876543210"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              error={formErrors.phone}
+            />
+            <Input
+              label="Email Address"
+              type="email"
+              placeholder="vendor@example.com"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            />
+            <Input
+              label="GSTIN / Tax ID"
+              placeholder="e.g. 27AAAAA0000A1Z5"
+              value={formData.gst_number}
+              onChange={(e) => setFormData({ ...formData, gst_number: e.target.value.toUpperCase() })}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Select
+              label="Payment Terms"
+              value={formData.payment_terms}
+              onChange={(e) => setFormData({ ...formData, payment_terms: e.target.value })}
+              options={[
+                { value: "immediate", label: "Immediate / Cash on Delivery" },
+                { value: "net_15", label: "Net 15 Days" },
+                { value: "net_30", label: "Net 30 Days" },
+                { value: "net_60", label: "Net 60 Days" },
+                { value: "advance", label: "Advance Payment" },
+              ]}
+            />
+            <Select
+              label="Account Status"
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              options={[
+                { value: "active", label: "Active Supplier" },
+                { value: "inactive", label: "Inactive / Suspended" },
+              ]}
+            />
+          </div>
+
+          <Input
+            label="Street Address"
+            placeholder="Building, street, industrial area..."
+            value={formData.address}
+            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Input
+              label="City"
+              placeholder="e.g. Mumbai"
+              value={formData.city}
+              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+            />
+            <Input
+              label="State / Province"
+              placeholder="e.g. Maharashtra"
+              value={formData.state}
+              onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+            />
+            <Input
+              label="Postal Code"
+              placeholder="e.g. 400001"
+              value={formData.postal_code}
+              onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label className="label text-xs font-semibold uppercase text-base-content/70">
+              Procurement Notes & Delivery Terms
+            </label>
+            <textarea
+              rows={3}
+              placeholder="Enter special shipping instructions, minimum order quantities, or supplier credit limits..."
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              className="textarea textarea-bordered w-full bg-base-100 text-sm"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-3 border-t border-base-content/10">
+            <Button variant="ghost" onClick={() => setIsModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit" loading={submitting}>
+              {editingSupplier ? "Save Changes" : "Register Supplier"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Delete Confirmation Modal */}
-      {deleteTarget && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0, 0, 0, 0.8)",
-            backdropFilter: "blur(6px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 65,
-            padding: "1rem",
-            perspective: "1200px",
-          }}
-          onClick={() => !deleting && setDeleteTarget(null)}
-        >
-          <div
-            className="card-3d"
-            style={{
-              width: "100%",
-              maxWidth: "440px",
-              padding: "1.75rem",
-              borderRadius: "16px",
-              animation: "perspectiveSlideIn 0.3s ease forwards",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", color: "#ef4444" }}>
-              <div
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: "50%",
-                  background: "rgba(239, 68, 68, 0.2)",
-                  border: "1px solid rgba(239, 68, 68, 0.4)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <AlertCircle size={24} />
-              </div>
-              <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 800, color: "#f87171" }}>
-                Delete Supplier?
-              </h3>
-            </div>
-
-            <p style={{ color: "#a39d91", fontSize: "0.875rem", margin: "1.25rem 0 1.75rem", lineHeight: 1.5 }}>
-              Are you sure you want to delete <strong style={{ color: "#f7df8f" }}>"{deleteTarget.name}"</strong>? This will remove their
-              procurement profile from the active supplier directory.
-            </p>
-
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem" }}>
-              <Button3D
-                variant="dark"
-                onClick={() => setDeleteTarget(null)}
-                disabled={deleting}
-              >
-                Cancel
-              </Button3D>
-              <Button3D
-                variant="danger"
-                onClick={handleDelete}
-                loading={deleting}
-              >
-                Confirm Delete
-              </Button3D>
+      <Modal
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        title="Confirm Supplier Deletion"
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4 pt-2">
+          <div className="flex items-start gap-3 p-3 rounded-xl bg-error/10 text-error border border-error/20">
+            <AlertCircle size={20} className="shrink-0 mt-0.5" />
+            <div className="text-xs leading-relaxed">
+              Are you sure you want to delete <strong className="font-bold">{deleteTarget?.name}</strong>?
+              This will remove them from the active vendor directory.
             </div>
           </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="ghost" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button variant="danger" loading={deleting} onClick={handleDelete}>
+              Delete Supplier
+            </Button>
+          </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

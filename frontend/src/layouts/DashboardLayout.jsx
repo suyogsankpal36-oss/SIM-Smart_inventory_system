@@ -4,15 +4,18 @@ import {
   BadgePercent,
   Bell,
   Boxes,
+  ChevronLeft,
+  ChevronRight,
   FileSpreadsheet,
   History,
   Layers,
   LayoutDashboard,
   LogOut,
-  Menu,
+  Menu as MenuIcon,
   Package,
   QrCode,
   Receipt,
+  Search,
   Settings,
   Shield,
   ShoppingCart,
@@ -30,11 +33,13 @@ import { useAuth } from "../context/AuthContext";
 import { useOnlineStatus } from "../hooks/useOnlineStatus";
 import NotificationDropdown from "../components/NotificationDropdown";
 import Scene3DBackground from "../components/3d/Scene3DBackground";
+import ThemeToggle from "../components/ui/ThemeToggle";
 
 export default function DashboardLayout() {
   const { user, logout, isAdmin } = useAuth();
   const isOnline = useOnlineStatus();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -82,43 +87,64 @@ export default function DashboardLayout() {
     year: "numeric",
   });
 
-  return (
-    <div style={styles.layoutContainer}>
-      {/* Ambient Gold Constellation Background */}
-      <Scene3DBackground opacity={0.28} particleCount={36} color="212, 175, 55" />
+  const userInitial = (user?.first_name?.[0] || user?.username?.[0] || "U").toUpperCase();
 
-      {/* Mobile Drawer Overlay */}
+  return (
+    <div className="min-h-screen flex bg-base-100 text-base-content relative overflow-x-hidden">
+      {/* Ambient Gold Constellation Particles */}
+      <Scene3DBackground opacity={0.22} particleCount={36} color="212, 175, 55" />
+
+      {/* Mobile Drawer Backdrop */}
       {mobileOpen && (
-        <div style={styles.backdrop} onClick={() => setMobileOpen(false)} />
+        <div
+          onClick={() => setMobileOpen(false)}
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 lg:hidden transition-opacity"
+        />
       )}
 
       {/* Sidebar Navigation */}
       <aside
-        style={styles.sidebar}
-        className={`app-sidebar ${mobileOpen ? "mobile-open" : ""}`}
+        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col bg-base-200 border-r border-base-300 shadow-xl transition-all duration-300 lg:static lg:translate-x-0 ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        } ${collapsed ? "lg:w-20" : "lg:w-64"} w-72`}
       >
-        {/* Brand Header with Floating Gold Shield */}
-        <div style={styles.brandHeader}>
-          <div style={styles.brandLogo} className="wobble-3d">
-            <Shield size={22} color="#0c0e14" style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.4))" }} />
-          </div>
-          <div style={styles.brandInfo}>
-            <span style={styles.brandName} className="text-gradient-gold">Smart Inventory</span>
-            <span style={styles.brandTag}>Dark Gold Edition</span>
-          </div>
+        {/* Brand Header */}
+        <div className="flex items-center justify-between h-16 px-4 border-b border-base-300">
+          <Link to="/" className="flex items-center gap-3 overflow-hidden">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 via-[#d4af37] to-amber-200 flex items-center justify-center shrink-0 shadow-md">
+              <Shield className="w-5 h-5 text-black" />
+            </div>
+            {!collapsed && (
+              <div className="flex flex-col min-w-0">
+                <span className="font-extrabold text-sm tracking-tight bg-gradient-to-r from-amber-200 via-primary to-amber-500 bg-clip-text text-transparent truncate">
+                  Smart Inventory
+                </span>
+                <span className="text-[10px] font-semibold text-primary/80 uppercase tracking-widest">
+                  Enterprise Suite
+                </span>
+              </div>
+            )}
+          </Link>
+
+          {/* Mobile Close Button */}
           <button
+            type="button"
             onClick={() => setMobileOpen(false)}
-            style={styles.closeBtn}
-            className="mobile-close-btn"
+            className="btn btn-ghost btn-sm btn-circle lg:hidden text-base-content/60"
             aria-label="Close sidebar"
           >
-            <X size={20} />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Navigation Items List with Hover & Active Extrusion */}
-        <nav style={styles.navContainer}>
-          <div style={styles.navSectionLabel}>EXECUTIVE MODULES</div>
+        {/* Navigation Items List */}
+        <div className="flex-1 overflow-y-auto py-4 px-2 space-y-1 mobile-touch-scroll">
+          {!collapsed && (
+            <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-base-content/50">
+              Operations & Modules
+            </div>
+          )}
+
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive =
@@ -131,378 +157,244 @@ export default function DashboardLayout() {
                 key={item.path}
                 to={item.path}
                 onClick={() => setMobileOpen(false)}
-                className="table-row-3d"
-                style={{
-                  ...styles.navLink,
-                  background: isActive
-                    ? "linear-gradient(135deg, rgba(212, 175, 55, 0.22) 0%, rgba(153, 101, 21, 0.12) 100%)"
-                    : "transparent",
-                  color: isActive ? "#f7df8f" : "#a39d91",
-                  fontWeight: isActive ? "700" : "500",
-                  transform: isActive ? "translate3d(0, -1px, 6px)" : "translate3d(0, 0, 0)",
-                  boxShadow: isActive
-                    ? "0 4px 14px rgba(0, 0, 0, 0.6), 0 0 12px rgba(212, 175, 55, 0.2), inset 0 1px 0 rgba(255, 240, 180, 0.35)"
-                    : "none",
-                  borderLeft: isActive ? "3px solid #d4af37" : "3px solid transparent",
-                }}
+                title={collapsed ? item.name : undefined}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-xs transition-all duration-150 group relative ${
+                  isActive
+                    ? "bg-primary text-black font-bold shadow-md shadow-primary/20"
+                    : "text-base-content/70 hover:text-base-content hover:bg-base-300/60"
+                } ${collapsed ? "justify-center px-0" : ""}`}
               >
                 <Icon
-                  size={18}
-                  color={isActive ? "#d4af37" : "#878072"}
-                  style={{
-                    flexShrink: 0,
-                    transform: isActive ? "scale(1.15)" : "scale(1)",
-                    transition: "transform 0.2s ease",
-                  }}
+                  className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-110 ${
+                    isActive ? "text-black" : "text-base-content/60 group-hover:text-primary"
+                  }`}
                 />
-                <span>{item.name}</span>
-                {item.adminOnly && (
-                  <span style={styles.adminPill} className="badge-3d-gold">VIP</span>
+                {!collapsed && (
+                  <>
+                    <span className="truncate flex-1">{item.name}</span>
+                    {item.adminOnly && (
+                      <span className="badge badge-xs badge-neutral border-base-300 text-[9px] uppercase font-bold">
+                        VIP
+                      </span>
+                    )}
+                  </>
                 )}
               </NavLink>
             );
           })}
-        </nav>
+        </div>
 
-        {/* Bottom User Pill with Extruded Medallion */}
-        <div style={styles.userFooter}>
-          <div style={styles.userCard} className="card-3d">
-            <div style={styles.userAvatar}>
-              {(user?.first_name?.[0] || user?.username?.[0] || "U").toUpperCase()}
+        {/* Sidebar Footer with Collapse Toggle & Profile */}
+        <div className="p-3 border-t border-base-300 bg-base-200/80 flex flex-col gap-2">
+          {/* Desktop Collapse Toggle */}
+          <button
+            type="button"
+            onClick={() => setCollapsed(!collapsed)}
+            className="hidden lg:flex items-center justify-center gap-2 w-full py-1.5 px-2 rounded-lg text-xs font-semibold text-base-content/60 hover:text-base-content hover:bg-base-300/50 transition cursor-pointer"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? (
+              <ChevronRight className="w-4 h-4" />
+            ) : (
+              <>
+                <ChevronLeft className="w-4 h-4" />
+                <span>Collapse Sidebar</span>
+              </>
+            )}
+          </button>
+
+          {/* User Profile Mini Bar */}
+          <div
+            className={`flex items-center gap-3 p-2 rounded-xl bg-base-300/40 border border-base-300 ${
+              collapsed ? "justify-center p-1" : ""
+            }`}
+          >
+            <div className="avatar placeholder shrink-0">
+              <div className="bg-primary/20 text-primary border border-primary/40 rounded-xl w-8 h-8 font-bold text-xs flex items-center justify-center">
+                <span>{userInitial}</span>
+              </div>
             </div>
-            <div style={styles.userDetails}>
-              <span style={styles.userName}>
-                {user?.get_full_name || user?.username || "User"}
-              </span>
-              <span style={styles.userRoleBadge} className="badge-3d-gold">
-                {user?.role?.toUpperCase()}
-              </span>
-            </div>
-            <button
-              onClick={handleLogout}
-              style={styles.logoutIconBtn}
-              title="Sign Out"
-              aria-label="Sign Out"
-            >
-              <LogOut size={16} color="#d4af37" />
-            </button>
+
+            {!collapsed && (
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-bold truncate text-base-content">
+                  {user?.first_name || user?.username || "Staff User"}
+                </div>
+                <div className="text-[10px] text-base-content/50 uppercase font-semibold">
+                  {user?.role || "Employee"}
+                </div>
+              </div>
+            )}
+
+            {!collapsed && (
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="btn btn-ghost btn-xs btn-circle text-error/80 hover:text-error hover:bg-error/10"
+                title="Sign Out"
+                aria-label="Sign Out"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <div style={styles.mainWrapper}>
-        {/* Top Navbar with Glassmorphic Elevation */}
-        <header style={styles.topNavbar} className="card-3d-glass app-top-navbar">
-          <div style={styles.navbarLeft}>
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+        {/* Top Navbar */}
+        <header className="sticky top-0 z-30 h-16 flex items-center justify-between px-4 sm:px-6 bg-base-200/85 backdrop-blur-md border-b border-base-300 shadow-sm">
+          {/* Left: Mobile hamburger & Breadcrumbs */}
+          <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={() => setMobileOpen(true)}
-              className="mobile-hamburger-btn"
-              aria-label="Open navigation menu"
+              className="btn btn-ghost btn-sm btn-circle lg:hidden text-primary border border-base-300"
+              aria-label="Open sidebar"
             >
-              <Menu size={20} color="#d4af37" />
+              <MenuIcon className="w-5 h-5" />
             </button>
-            <div style={styles.breadcrumb}>
-              <h2 style={styles.breadcrumbTitle} className="text-gradient-gold">{pageTitle}</h2>
+
+            <div className="breadcrumbs text-xs font-medium hidden sm:block">
+              <ul>
+                <li>
+                  <Link to="/" className="text-base-content/60 hover:text-primary">
+                    Inventory
+                  </Link>
+                </li>
+                <li className="font-bold text-base-content">{pageTitle}</li>
+              </ul>
             </div>
+
+            <h1 className="sm:hidden font-bold text-sm tracking-tight text-base-content truncate">
+              {pageTitle}
+            </h1>
           </div>
 
-          <div style={styles.navbarRight}>
-            {/* Live Network Connectivity Badge */}
+          {/* Right: Quick Tools & Profile */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Live Network Status */}
             <div
-              title={isOnline ? "System connected to network" : "Internet disconnected (Offline Mode)"}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide transition-all ${
+              title={isOnline ? "Connected to Cloud API" : "Offline Mode"}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition ${
                 isOnline
-                  ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400"
-                  : "bg-rose-500/15 border border-rose-500/40 text-rose-300 animate-pulse"
+                  ? "bg-success/10 border-success/30 text-success"
+                  : "bg-error/10 border-error/30 text-error animate-pulse"
               }`}
             >
               {isOnline ? (
                 <>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                  <span className="hide-on-mobile">Online</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-success animate-ping" />
+                  <span className="hidden md:inline">Online</span>
                 </>
               ) : (
                 <>
-                  <WifiOff size={12} className="text-rose-400" />
+                  <WifiOff className="w-3 h-3" />
                   <span>Offline</span>
                 </>
               )}
             </div>
 
-            <div style={styles.dateBadge} className="badge-3d hide-on-mobile">
-              <span>📅 {todayStr}</span>
-            </div>
+            {/* Date Display */}
+            <span className="text-xs text-base-content/60 hidden xl:inline-block font-medium">
+              {todayStr}
+            </span>
 
-            <NotificationDropdown />
-
+            {/* Guest Demo Indicator */}
             {(user?.is_guest_demo || user?.username === "guest_demo") && (
               <div
-                title="You are browsing in Live Guest Demo mode with full executive privileges unlocked."
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide bg-gradient-to-r from-amber-500/20 via-[#d4af37]/30 to-amber-500/20 border border-[#d4af37]/50 text-amber-200 shadow-[0_0_12px_rgba(212,175,55,0.25)]"
+                title="Live Guest Demo mode active"
+                className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-primary/15 border border-primary/40 text-primary shadow-sm"
               >
-                <Sparkles size={12} className="text-[#d4af37] animate-pulse" />
+                <Sparkles className="w-3 h-3 text-primary animate-pulse" />
                 <span>Guest Demo</span>
               </div>
             )}
 
-            <div style={styles.navUserGreeting} className="badge-3d-gold">
-              <User size={15} color="#d4af37" />
-              <span>{user?.username}</span>
+            {/* Theme Toggle (Dark / Light) */}
+            <ThemeToggle size="sm" />
+
+            {/* Notifications Dropdown */}
+            <NotificationDropdown />
+
+            {/* User Profile Dropdown */}
+            <div className="dropdown dropdown-end">
+              <div
+                tabIndex={0}
+                role="button"
+                className="btn btn-ghost btn-circle avatar placeholder border border-base-300 hover:border-primary/50 cursor-pointer"
+              >
+                <div className="bg-primary/20 text-primary font-bold rounded-full w-9 text-xs">
+                  <span>{userInitial}</span>
+                </div>
+              </div>
+              <ul
+                tabIndex={0}
+                className="dropdown-content menu p-2 shadow-2xl bg-base-200 border border-base-300 rounded-2xl w-56 mt-2 z-50 text-xs"
+              >
+                <li className="menu-title px-4 py-2 border-b border-base-300 mb-1">
+                  <div className="font-bold text-sm text-base-content">
+                    {user?.first_name || user?.username || "Staff User"}
+                  </div>
+                  <div className="text-[11px] text-base-content/60 font-normal truncate">
+                    {user?.email || "staff@smartinventory.com"}
+                  </div>
+                </li>
+                <li>
+                  <Link to="/pos" className="py-2.5 flex items-center gap-2">
+                    <ShoppingCart className="w-4 h-4 text-primary" />
+                    <span>Launch POS Terminal</span>
+                  </Link>
+                </li>
+                {isAdmin && (
+                  <li>
+                    <Link to="/settings" className="py-2.5 flex items-center gap-2">
+                      <Settings className="w-4 h-4 text-base-content/70" />
+                      <span>Business Settings</span>
+                    </Link>
+                  </li>
+                )}
+                <li>
+                  <Link to="/notifications" className="py-2.5 flex items-center gap-2">
+                    <Bell className="w-4 h-4 text-base-content/70" />
+                    <span>Notifications Inbox</span>
+                  </Link>
+                </li>
+                <div className="divider my-1 opacity-40" />
+                <li>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="py-2.5 text-error flex items-center gap-2 hover:bg-error/10"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Sign Out</span>
+                  </button>
+                </li>
+              </ul>
             </div>
           </div>
         </header>
 
-        {/* Global Offline Bar */}
+        {/* Global Offline Bar Banner */}
         {!isOnline && (
-          <div className="w-full bg-rose-950/80 border-b border-rose-500/30 text-rose-200 px-4 py-2 text-xs flex items-center justify-between gap-2 backdrop-blur-md z-30">
+          <div className="w-full bg-error/90 text-white px-4 py-2 text-xs flex items-center justify-between gap-2 shadow-md">
             <div className="flex items-center gap-2">
-              <WifiOff size={14} className="text-rose-400 shrink-0" />
+              <WifiOff className="w-4 h-4 shrink-0" />
               <span>
-                <strong>Offline Mode Active:</strong> Internet disconnected. You can browse cached modules; new records will sync once reconnected.
+                <strong>Offline Mode Active:</strong> Network connectivity lost. Local changes are
+                queued and telemetry will resume automatically.
               </span>
             </div>
           </div>
         )}
 
-        {/* Dynamic Page Content in Perspective Viewport */}
-        <main style={styles.contentArea} className="app-content-area">
-          <div key={location.pathname} className="perspective-page-viewport">
-            <Outlet />
-          </div>
+        {/* Dynamic Route Content */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+          <Outlet />
         </main>
       </div>
     </div>
   );
 }
-
-const styles = {
-  layoutContainer: {
-    display: "flex",
-    minHeight: "100vh",
-    backgroundColor: "#0a0b10",
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    color: "#f5f3ef",
-  },
-  backdrop: {
-    position: "fixed",
-    inset: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.75)",
-    backdropFilter: "blur(4px)",
-    zIndex: 40,
-  },
-  sidebar: {
-    width: "250px",
-    backgroundColor: "#0d0f17",
-    borderRight: "1px solid rgba(212, 175, 55, 0.22)",
-    display: "flex",
-    flexDirection: "column",
-    flexShrink: 0,
-    zIndex: 50,
-    boxShadow: "4px 0 24px rgba(0, 0, 0, 0.6)",
-  },
-  brandHeader: {
-    padding: "1.25rem 1.25rem",
-    display: "flex",
-    alignItems: "center",
-    gap: "0.75rem",
-    borderBottom: "1px solid rgba(212, 175, 55, 0.18)",
-  },
-  brandLogo: {
-    width: "36px",
-    height: "36px",
-    borderRadius: "10px",
-    background: "linear-gradient(135deg, #f7df8f 0%, #d4af37 60%, #b38210 100%)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-    boxShadow: "0 4px 12px rgba(212, 175, 55, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.6)",
-  },
-  brandInfo: {
-    display: "flex",
-    flexDirection: "column",
-    flex: 1,
-    minWidth: 0,
-  },
-  brandName: {
-    fontSize: "0.9375rem",
-    fontWeight: "800",
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    letterSpacing: "0.02em",
-  },
-  brandTag: {
-    fontSize: "0.6875rem",
-    color: "#998f7e",
-  },
-  closeBtn: {
-    background: "none",
-    border: "none",
-    color: "#d4af37",
-    cursor: "pointer",
-  },
-  navContainer: {
-    padding: "1rem 0.75rem",
-    display: "flex",
-    flexDirection: "column",
-    gap: "0.3rem",
-    flex: 1,
-    overflowY: "auto",
-  },
-  navSectionLabel: {
-    fontSize: "0.65rem",
-    fontWeight: "800",
-    color: "#8c7847",
-    letterSpacing: "0.08em",
-    padding: "0.5rem 0.5rem 0.25rem 0.5rem",
-  },
-  navLink: {
-    display: "flex",
-    alignItems: "center",
-    gap: "0.75rem",
-    padding: "0.65rem 0.75rem",
-    borderRadius: "8px",
-    fontSize: "0.875rem",
-    textDecoration: "none",
-    transition: "all 0.15s ease",
-  },
-  adminPill: {
-    marginLeft: "auto",
-    fontSize: "0.6rem",
-    fontWeight: "800",
-    padding: "0.15rem 0.45rem",
-    borderRadius: "4px",
-  },
-  userFooter: {
-    padding: "1rem 0.75rem",
-    borderTop: "1px solid rgba(212, 175, 55, 0.15)",
-  },
-  userCard: {
-    display: "flex",
-    alignItems: "center",
-    gap: "0.65rem",
-    padding: "0.55rem 0.75rem",
-    backgroundColor: "#131622",
-    borderRadius: "10px",
-    border: "1px solid rgba(212, 175, 55, 0.25)",
-  },
-  userAvatar: {
-    width: "34px",
-    height: "34px",
-    borderRadius: "50%",
-    background: "linear-gradient(135deg, #f7df8f 0%, #d4af37 100%)",
-    color: "#0c0d12",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontWeight: "800",
-    fontSize: "0.875rem",
-    flexShrink: 0,
-    boxShadow: "0 3px 8px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.6)",
-  },
-  userDetails: {
-    display: "flex",
-    flexDirection: "column",
-    flex: 1,
-    minWidth: 0,
-  },
-  userName: {
-    fontSize: "0.8125rem",
-    fontWeight: "700",
-    color: "#f5f3ef",
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-  },
-  userRoleBadge: {
-    fontSize: "0.6rem",
-    fontWeight: "800",
-    padding: "0.1rem 0.35rem",
-    borderRadius: "4px",
-    width: "fit-content",
-    marginTop: "2px",
-  },
-  logoutIconBtn: {
-    background: "rgba(212, 175, 55, 0.1)",
-    border: "1px solid rgba(212, 175, 55, 0.25)",
-    padding: "6px",
-    cursor: "pointer",
-    borderRadius: "6px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    transition: "all 0.15s ease",
-  },
-  mainWrapper: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    minWidth: 0,
-  },
-  topNavbar: {
-    height: "64px",
-    backgroundColor: "rgba(13, 15, 23, 0.85)",
-    backdropFilter: "blur(16px)",
-    WebkitBackdropFilter: "blur(16px)",
-    borderBottom: "1px solid rgba(212, 175, 55, 0.22)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "0 1.75rem",
-    position: "sticky",
-    top: 0,
-    zIndex: 30,
-    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5)",
-  },
-  navbarLeft: {
-    display: "flex",
-    alignItems: "center",
-    gap: "1rem",
-  },
-  hamburgerBtn: {
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    color: "#d4af37",
-    display: "none",
-  },
-  breadcrumb: {
-    display: "flex",
-    alignItems: "center",
-  },
-  breadcrumbTitle: {
-    fontSize: "1.2rem",
-    fontWeight: "800",
-    margin: 0,
-    letterSpacing: "0.01em",
-  },
-  navbarRight: {
-    display: "flex",
-    alignItems: "center",
-    gap: "1rem",
-  },
-  dateBadge: {
-    fontSize: "0.75rem",
-    color: "#d4af37",
-    backgroundColor: "rgba(212, 175, 55, 0.1)",
-    border: "1px solid rgba(212, 175, 55, 0.25)",
-    padding: "0.35rem 0.75rem",
-    borderRadius: "8px",
-    fontWeight: "600",
-  },
-  navUserGreeting: {
-    display: "flex",
-    alignItems: "center",
-    gap: "0.45rem",
-    fontSize: "0.8125rem",
-    fontWeight: "700",
-    padding: "0.35rem 0.75rem",
-    borderRadius: "8px",
-  },
-  contentArea: {
-    padding: "1.75rem",
-    flex: 1,
-  },
-};

@@ -4,7 +4,6 @@ import {
   AlertCircle,
   Briefcase,
   CheckCircle2,
-  CreditCard,
   Edit,
   Eye,
   EyeOff,
@@ -12,7 +11,6 @@ import {
   Mail,
   Phone,
   Power,
-  QrCode,
   RefreshCw,
   Search,
   Shield,
@@ -29,31 +27,24 @@ import {
 } from "lucide-react";
 import staffService from "../services/staffService";
 import { useAuth } from "../context/AuthContext";
-import Tilt3D from "../components/3d/Tilt3D";
-import Button3D from "../components/3d/Button3D";
+import { Badge, Button, Card, Input, Modal, Select, StatsCard, Table } from "../components/ui";
 
 const ROLE_CONFIG = {
   admin: {
     label: "Administrator",
-    text: "#F7DF8F",
-    bg: "rgba(212, 175, 55, 0.15)",
-    border: "rgba(212, 175, 55, 0.45)",
+    badge: "badge-primary",
     icon: ShieldCheck,
     description: "Full system administration, security & staff control",
   },
   manager: {
     label: "Store Manager",
-    text: "#fde68a",
-    bg: "rgba(245, 158, 11, 0.15)",
-    border: "rgba(245, 158, 11, 0.4)",
+    badge: "badge-warning",
     icon: Briefcase,
     description: "Inventory, suppliers, customers, expenses & sales analytics",
   },
   employee: {
     label: "Staff / Cashier",
-    text: "#93c5fd",
-    bg: "rgba(59, 130, 246, 0.15)",
-    border: "rgba(59, 130, 246, 0.4)",
+    badge: "badge-info",
     icon: Users,
     description: "Point-of-sale checkout, customer lookup & catalog browsing",
   },
@@ -165,6 +156,8 @@ export default function EmployeesPage() {
     setStatusFilter("");
   };
 
+  const hasActiveFilters = Boolean(search) || Boolean(roleFilter) || statusFilter !== "";
+
   // ---------------- Add Staff ----------------
   const openAddModal = () => {
     setFormData({
@@ -180,27 +173,6 @@ export default function EmployeesPage() {
     setFormErrors({});
     setShowAddPassword(false);
     setIsAddModalOpen(true);
-  };
-
-  const getFieldError = (field) => {
-    if (!formErrors) return null;
-    const err = formErrors[field] || formErrors.errors?.[field];
-    if (Array.isArray(err)) return err[0];
-    if (typeof err === "string") return err;
-    return null;
-  };
-
-  const getFormAlert = () => {
-    if (!formErrors) return null;
-    if (formErrors.detail && typeof formErrors.detail === "string") return formErrors.detail;
-    const errorsObj = formErrors.errors || formErrors;
-    if (typeof errorsObj === "object") {
-      const msgs = Object.entries(errorsObj)
-        .filter(([k]) => k !== "detail")
-        .map(([k, v]) => `${k.replace("_", " ")}: ${Array.isArray(v) ? v[0] : v}`);
-      if (msgs.length > 0) return msgs[0];
-    }
-    return null;
   };
 
   const handleAddSubmit = async (e) => {
@@ -360,15 +332,12 @@ export default function EmployeesPage() {
 
   const handleResetSubmit = async (e) => {
     e.preventDefault();
-    if (!resetTarget) return;
     setResetErrors({});
 
     const errors = {};
-    if (!resetData.new_password) {
-      errors.new_password = "New password is required.";
-    } else if (resetData.new_password.length < 6) {
-      errors.new_password = "Password must be at least 6 characters long.";
-    }
+    if (!resetData.new_password) errors.new_password = "Password is required.";
+    else if (resetData.new_password.length < 6)
+      errors.new_password = "Password must be at least 6 characters.";
 
     if (resetData.new_password !== resetData.new_password_confirm) {
       errors.new_password_confirm = "Passwords do not match.";
@@ -381,951 +350,586 @@ export default function EmployeesPage() {
 
     setResetting(true);
     try {
-      await staffService.resetPassword(resetTarget.id, resetData);
-      toast.success(`Password for ${resetTarget.username} has been reset successfully!`);
+      await staffService.resetPassword(resetTarget.id, {
+        new_password: resetData.new_password,
+        new_password_confirm: resetData.new_password_confirm,
+      });
+      toast.success(`Password for ${resetTarget.username} has been reset!`);
       setIsResetModalOpen(false);
     } catch (err) {
       console.error(err);
       const errorsObj = err.response?.data?.errors || err.response?.data || {};
-      setResetErrors(err.response?.data || errorsObj);
-      const errorMsg =
-        err.response?.data?.detail ||
-        (typeof errorsObj === "object"
-          ? Object.entries(errorsObj)
-              .map(([k, v]) => `${k}: ${Array.isArray(v) ? v[0] : v}`)
-              .join("; ")
-          : "Failed to reset password.");
-      toast.error(errorMsg);
+      setResetErrors(errorsObj);
+      toast.error(err.response?.data?.detail || "Failed to reset password.");
     } finally {
       setResetting(false);
     }
   };
 
-
   // ---------------- Delete Staff ----------------
-  const confirmDelete = (member) => {
-    if (member.id === currentUser?.id) {
-      toast.error("You cannot delete your own account.");
-      return;
-    }
-    setDeleteTarget(member);
-  };
-
-  const handleDeleteSubmit = async () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
       await staffService.deleteStaff(deleteTarget.id);
-      toast.success(`User ${deleteTarget.username} deleted successfully.`);
-      if (selectedMember?.id === deleteTarget.id) {
-        setSelectedMember(null);
-      }
+      toast.success(`Staff user "${deleteTarget.username}" permanently removed.`);
+      if (selectedMember?.id === deleteTarget.id) setSelectedMember(null);
       setDeleteTarget(null);
       fetchStaff();
       fetchStats();
     } catch (err) {
       console.error(err);
-      const detail = err.response?.data?.detail || "Failed to delete user.";
-      toast.error(detail);
+      toast.error(err.response?.data?.detail || "Failed to delete staff member.");
     } finally {
       setDeleting(false);
     }
   };
 
-  const formatCurrency = (val) => {
-    const num = parseFloat(val) || 0;
-    return "₹" + num.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  };
-
-  const formatDate = (isoString) => {
-    if (!isoString) return "Never";
-    try {
-      const d = new Date(isoString);
-      return d.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } catch {
-      return "—";
-    }
-  };
-
-  // Active preview member
-  const previewUser = selectedMember || currentUser || {
-    username: "administrator",
-    full_name: "Master Executive",
-    email: "admin@enterprise.gold",
-    role: "admin",
-    is_active: true,
-  };
-  const previewRole = ROLE_CONFIG[previewUser.role] || ROLE_CONFIG.employee;
-
   return (
-    <div className="space-y-8 pb-14 text-white">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#d4af37]/10 border border-[#d4af37]/30 text-xs font-semibold tracking-wider text-[#d4af37] mb-2 uppercase">
-            <UserCheck size={14} className="text-[#d4af37]" />
-            Human Resources & Staff Security
-          </div>
-          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-amber-100 via-[#d4af37] to-amber-500 bg-clip-text text-transparent">
-            Personnel & Credential Directory
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-base-content tracking-tight">
+            Staff & Access Control
           </h1>
-          <p className="text-sm text-neutral-400 mt-1 max-w-2xl">
-            Authorize employee access, monitor role hierarchies, supervise sales volume, and issue digital security ID credentials.
+          <p className="text-sm text-base-content/70 mt-1">
+            Provision operational privileges, enforce role-based segregation of duties, and manage security credentials.
           </p>
         </div>
-
         <div className="flex items-center gap-3">
-          <Button3D
-            variant="dark"
-            onClick={handleRefresh}
-            disabled={refreshing}
+          <Button
+            variant="ghost"
+            size="sm"
             icon={RefreshCw}
-            className={refreshing ? "opacity-75" : ""}
+            onClick={handleRefresh}
+            loading={refreshing}
           >
-            {refreshing ? "Updating..." : "Refresh"}
-          </Button3D>
-
-          <Button3D
-            variant="gold"
-            onClick={openAddModal}
+            Refresh
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
             icon={UserPlus}
+            onClick={openAddModal}
           >
             Add Staff Member
-          </Button3D>
+          </Button>
         </div>
       </div>
 
-      {/* KPI Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <Tilt3D intensity={12}>
-          <div className="card-3d p-5 rounded-2xl relative overflow-hidden group">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">Total Team</span>
-              <div className="w-10 h-10 rounded-xl bg-[#d4af37]/15 border border-[#d4af37]/30 flex items-center justify-center text-[#d4af37]">
-                <Users size={20} />
-              </div>
-            </div>
-            <div className="text-3xl font-black mt-3 text-white tracking-tight">{stats.total_staff}</div>
-            <div className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#d4af37]"></span>
-              Registered user accounts
-            </div>
-          </div>
-        </Tilt3D>
-
-        <Tilt3D intensity={12}>
-          <div className="card-3d p-5 rounded-2xl relative overflow-hidden group">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">Active Personnel</span>
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                <CheckCircle2 size={20} />
-              </div>
-            </div>
-            <div className="text-3xl font-black mt-3 text-emerald-400 tracking-tight">{stats.active_staff}</div>
-            <div className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-              Permitted system access
-            </div>
-          </div>
-        </Tilt3D>
-
-        <Tilt3D intensity={12}>
-          <div className="card-3d p-5 rounded-2xl relative overflow-hidden group">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">Administrators</span>
-              <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300">
-                <ShieldCheck size={20} />
-              </div>
-            </div>
-            <div className="text-3xl font-black mt-3 text-amber-300 tracking-tight">{stats.admin_count}</div>
-            <div className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-              {stats.manager_count} Store Managers
-            </div>
-          </div>
-        </Tilt3D>
-
-        <Tilt3D intensity={12}>
-          <div className="card-3d p-5 rounded-2xl relative overflow-hidden group">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">Cashiers / Staff</span>
-              <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400">
-                <Briefcase size={20} />
-              </div>
-            </div>
-            <div className="text-3xl font-black mt-3 text-blue-400 tracking-tight">{stats.employee_count}</div>
-            <div className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
-              POS Terminal operators
-            </div>
-          </div>
-        </Tilt3D>
+      {/* KPI Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatsCard
+          title="Total Staff"
+          value={stats.total_staff || staff.length}
+          icon={Users}
+          color="primary"
+          description="Provisioned user accounts"
+        />
+        <StatsCard
+          title="Active Users"
+          value={stats.active_staff || 0}
+          icon={UserCheck}
+          color="accent"
+          description="Active security sessions"
+        />
+        <StatsCard
+          title="Managers"
+          value={stats.manager_count || 0}
+          icon={Briefcase}
+          color="secondary"
+          description="Store supervisors"
+        />
+        <StatsCard
+          title="Cashiers / Staff"
+          value={stats.employee_count || 0}
+          icon={Shield}
+          color="primary"
+          description="POS terminal operators"
+        />
       </div>
 
-      {/* Main Grid: Staff Directory + Interactive Staff ID Badge */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
-        {/* Left 2 Cols: Search, Filters & Staff Table */}
-        <div className="xl:col-span-2 space-y-6">
-          {/* Search & Filter Toolbar */}
-          <div className="card-3d p-4 rounded-2xl flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="relative w-full md:w-80">
-              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-500" />
-              <input
-                type="text"
-                placeholder="Search staff by name, email, phone..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-8 py-2.5 rounded-xl bg-black/40 border border-[#d4af37]/25 text-sm text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]/40 transition"
-              />
-              {search && (
-                <button
-                  onClick={() => setSearch("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                className="px-3.5 py-2.5 rounded-xl bg-black/40 border border-[#d4af37]/25 text-sm text-neutral-300 focus:outline-none focus:border-[#d4af37] transition"
-              >
-                <option value="" className="bg-[#12141c]">All Roles</option>
-                <option value="admin" className="bg-[#12141c]">Administrators</option>
-                <option value="manager" className="bg-[#12141c]">Store Managers</option>
-                <option value="employee" className="bg-[#12141c]">Staff / Cashiers</option>
-              </select>
-
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3.5 py-2.5 rounded-xl bg-black/40 border border-[#d4af37]/25 text-sm text-neutral-300 focus:outline-none focus:border-[#d4af37] transition"
-              >
-                <option value="" className="bg-[#12141c]">All Statuses</option>
-                <option value="true" className="bg-[#12141c]">Active Only</option>
-                <option value="false" className="bg-[#12141c]">Inactive / Suspended</option>
-              </select>
-
-              {(search || roleFilter || statusFilter !== "") && (
-                <button
-                  onClick={clearFilters}
-                  className="px-3 py-2 text-xs font-semibold text-[#d4af37] hover:underline"
-                >
-                  Reset
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Directory Table */}
-          <div className="card-3d rounded-2xl overflow-hidden border border-[#d4af37]/20">
-            {loading ? (
-              <div className="p-16 flex flex-col items-center justify-center">
-                <RefreshCw size={28} className="animate-spin text-[#d4af37] mb-3" />
-                <p className="text-sm text-neutral-400">Loading staff accounts...</p>
+      {/* Main Grid: Staff Directory on Left, Selected Badge Profile on Right */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        {/* Left Column (2 cols): Filters & Table */}
+        <div className="lg:col-span-2 space-y-4">
+          <Card>
+            <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+              <div className="relative flex-1">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-base-content/40 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search staff by username, name, email, phone..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="input input-bordered input-sm w-full pl-10 bg-base-100"
+                />
               </div>
-            ) : staff.length === 0 ? (
-              <div className="p-14 text-center">
-                <div className="w-14 h-14 rounded-2xl bg-[#d4af37]/10 border border-[#d4af37]/20 flex items-center justify-center text-[#d4af37] mx-auto mb-3">
-                  <Users size={26} />
-                </div>
-                <h3 className="text-base font-semibold text-neutral-200">No staff members found</h3>
-                <p className="text-xs text-neutral-400 mt-1 max-w-sm mx-auto">
-                  {search || roleFilter || statusFilter !== ""
-                    ? "Try adjusting your search criteria or filter selections."
-                    : "Get started by adding your first employee or team member."}
-                </p>
-                {search || roleFilter || statusFilter !== "" ? (
-                  <button
-                    onClick={clearFilters}
-                    className="mt-4 px-4 py-2 rounded-xl text-xs font-semibold text-[#d4af37] border border-[#d4af37]/30 hover:bg-[#d4af37]/10 transition"
-                  >
-                    Clear Search & Filters
-                  </button>
-                ) : (
-                  <Button3D variant="gold" onClick={openAddModal} className="mt-4">
-                    Add First Member
-                  </Button3D>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  value={roleFilter}
+                  onChange={(e) => setRoleFilter(e.target.value)}
+                  className="select select-bordered select-sm bg-base-100"
+                >
+                  <option value="">All Roles</option>
+                  <option value="admin">Administrator</option>
+                  <option value="manager">Store Manager</option>
+                  <option value="employee">Cashier / Staff</option>
+                </select>
+
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="select select-bordered select-sm bg-base-100"
+                >
+                  <option value="">All Statuses</option>
+                  <option value="true">Active Only</option>
+                  <option value="false">Inactive / Suspended</option>
+                </select>
+
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="sm" onClick={clearFilters}>
+                    Clear
+                  </Button>
                 )}
               </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-[#d4af37]/20 bg-black/40 text-[11px] font-bold uppercase tracking-wider text-neutral-400">
-                      <th className="py-3.5 px-4">Staff Member</th>
-                      <th className="py-3.5 px-4">Role & Access</th>
-                      <th className="py-3.5 px-4">Contact</th>
-                      <th className="py-3.5 px-4">Sales Track</th>
-                      <th className="py-3.5 px-4">Status</th>
-                      <th className="py-3.5 px-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#d4af37]/10 text-sm">
-                    {staff.map((member) => {
-                      const roleCfg = ROLE_CONFIG[member.role] || ROLE_CONFIG.employee;
-                      const isSelf = member.id === currentUser?.id;
-                      const isSelected = selectedMember?.id === member.id;
+            </div>
+          </Card>
 
-                      return (
-                        <tr
-                          key={member.id}
-                          onClick={() => setSelectedMember(member)}
-                          className={`table-row-3d cursor-pointer transition-colors ${
-                            isSelected ? "bg-[#d4af37]/10 border-l-4 border-l-[#d4af37]" : "hover:bg-white/[0.02]"
-                          }`}
-                        >
-                          {/* Name & Avatar */}
-                          <td className="py-3 px-4">
-                            <div className="flex items-center gap-3">
-                              <div
-                                className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 shadow-inner"
-                                style={{
-                                  backgroundColor: roleCfg.bg,
-                                  color: roleCfg.text,
-                                  border: `1px solid ${roleCfg.border}`,
-                                }}
-                              >
-                                {(member.first_name?.[0] || member.username?.[0] || "U").toUpperCase()}
-                              </div>
-                              <div className="min-w-0">
-                                <div className="font-semibold text-neutral-100 flex items-center gap-1.5 truncate">
-                                  {member.full_name || member.username}
-                                  {isSelf && (
-                                    <span className="text-[10px] px-1.5 py-0.2 rounded font-black tracking-wide bg-[#d4af37] text-black">
-                                      YOU
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="text-xs text-neutral-500 truncate">@{member.username}</div>
-                              </div>
-                            </div>
-                          </td>
-
-                          {/* Role */}
-                          <td className="py-3 px-4">
-                            <span
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
-                              style={{
-                                backgroundColor: roleCfg.bg,
-                                color: roleCfg.text,
-                                border: `1px solid ${roleCfg.border}`,
-                              }}
-                            >
-                              <roleCfg.icon size={12} />
-                              {roleCfg.label}
-                            </span>
-                          </td>
-
-                          {/* Contact */}
-                          <td className="py-3 px-4 text-xs text-neutral-300">
-                            <div className="space-y-0.5">
-                              <div className="flex items-center gap-1.5 text-neutral-400 truncate max-w-[180px]">
-                                <Mail size={12} className="text-neutral-500 shrink-0" />
-                                <span className="truncate">{member.email}</span>
-                              </div>
-                              {member.phone && (
-                                <div className="flex items-center gap-1.5 text-neutral-500">
-                                  <Phone size={12} className="shrink-0" />
-                                  <span>{member.phone}</span>
-                                </div>
-                              )}
-                            </div>
-                          </td>
-
-                          {/* Sales Track */}
-                          <td className="py-3 px-4">
-                            <div className="text-xs">
-                              <div className="font-bold text-[#d4af37]">{formatCurrency(member.total_sales)}</div>
-                              <div className="text-[11px] text-neutral-500">
-                                {member.orders_count || 0} orders
-                              </div>
-                            </div>
-                          </td>
-
-                          {/* Status */}
-                          <td className="py-3 px-4">
-                            <span
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${
-                                member.is_active
-                                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-                                  : "bg-neutral-800 border-neutral-700 text-neutral-400"
-                              }`}
-                            >
-                              <span
-                                className={`w-1.5 h-1.5 rounded-full ${
-                                  member.is_active ? "bg-emerald-400" : "bg-neutral-500"
-                                }`}
-                              />
-                              {member.is_active ? "Active" : "Inactive"}
-                            </span>
-                          </td>
-
-                          {/* Actions */}
-                          <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center justify-end gap-1.5">
-                              <button
-                                onClick={() => openEditModal(member)}
-                                className="p-1.5 rounded-lg text-neutral-400 hover:text-amber-300 hover:bg-[#d4af37]/10 transition"
-                                title="Edit Staff Profile"
-                              >
-                                <Edit size={14} />
-                              </button>
-
-                              <button
-                                onClick={() => openResetModal(member)}
-                                className="p-1.5 rounded-lg text-neutral-400 hover:text-[#d4af37] hover:bg-[#d4af37]/10 transition"
-                                title="Reset Security Credentials"
-                              >
-                                <KeyRound size={14} />
-                              </button>
-
-                              <button
-                                onClick={() => handleToggleActive(member)}
-                                disabled={isSelf}
-                                className={`p-1.5 rounded-lg transition ${
-                                  isSelf
-                                    ? "opacity-30 cursor-not-allowed text-neutral-600"
-                                    : member.is_active
-                                    ? "text-neutral-400 hover:text-emerald-400 hover:bg-emerald-500/10"
-                                    : "text-neutral-500 hover:text-emerald-300"
-                                }`}
-                                title={
-                                  isSelf
-                                    ? "Cannot toggle your own status"
-                                    : member.is_active
-                                    ? "Suspend Account"
-                                    : "Activate Account"
-                                }
-                              >
-                                <Power size={14} />
-                              </button>
-
-                              <button
-                                onClick={() => confirmDelete(member)}
-                                disabled={isSelf}
-                                className={`p-1.5 rounded-lg transition ${
-                                  isSelf
-                                    ? "opacity-30 cursor-not-allowed text-neutral-600"
-                                    : "text-neutral-400 hover:text-rose-400 hover:bg-rose-500/10"
-                                }`}
-                                title={isSelf ? "Cannot delete yourself" : "Delete Account"}
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right 1 Col: Interactive Staff ID Badge Preview */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#d4af37] flex items-center gap-1.5">
-              <CreditCard size={15} />
-              Digital ID Badge
-            </span>
-            <span className="text-[11px] text-neutral-400">Interactive Tilt</span>
-          </div>
-
-          <Tilt3D intensity={18} glareColor="255, 235, 170">
-            <div className="relative rounded-3xl p-6 overflow-hidden bg-gradient-to-b from-[#1c1f2e] via-[#12141c] to-[#0a0b10] border-2 border-[#d4af37]/40 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_25px_rgba(212,175,55,0.2)]">
-              {/* Gold Lanyard Hole */}
-              <div className="mx-auto w-12 h-3 rounded-full bg-black/80 border border-[#d4af37]/50 shadow-inner mb-5"></div>
-
-              {/* Holographic Watermark Sheen */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#d4af37]/20 to-transparent rounded-bl-full pointer-events-none blur-sm"></div>
-
-              {/* Organization Header */}
-              <div className="text-center pb-4 border-b border-[#d4af37]/20 relative">
-                <div className="flex items-center justify-center gap-1 text-[#d4af37] text-xs font-black tracking-widest uppercase">
-                  <Sparkles size={13} />
-                  Enterprise Smart Inventory
-                </div>
-                <div className="text-[10px] text-neutral-400 uppercase tracking-widest mt-0.5">
-                  Official Security Credential
-                </div>
-              </div>
-
-              {/* Employee Avatar & Medallion */}
-              <div className="pt-6 pb-4 flex flex-col items-center text-center">
-                <div className="relative mb-3">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-[#996515] via-[#d4af37] to-[#f7df8f] p-0.5 shadow-[0_0_20px_rgba(212,175,55,0.4)]">
-                    <div className="w-full h-full rounded-2xl bg-[#12141c] flex items-center justify-center font-black text-2xl text-[#d4af37]">
-                      {(previewUser.first_name?.[0] || previewUser.username?.[0] || "U").toUpperCase()}
+          {/* Staff Table */}
+          <Table
+            loading={loading}
+            data={staff}
+            emptyTitle="No staff members found"
+            emptyDescription={
+              hasActiveFilters
+                ? "Try clearing your search query or filters."
+                : "Get started by provisioning your first team member account."
+            }
+            emptyAction={
+              !hasActiveFilters ? (
+                <Button variant="primary" size="sm" icon={UserPlus} onClick={openAddModal}>
+                  Add Staff Member
+                </Button>
+              ) : null
+            }
+            columns={[
+              {
+                header: "Staff Member",
+                render: (m) => (
+                  <div
+                    className="flex items-center gap-3 cursor-pointer"
+                    onClick={() => setSelectedMember(m)}
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-base shrink-0 border border-primary/20">
+                      {(m.first_name || m.username || "U").charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="font-bold text-base-content leading-snug">
+                        {m.full_name || m.username}
+                        {m.id === currentUser?.id && (
+                          <span className="badge badge-primary badge-xs ml-2">You</span>
+                        )}
+                      </div>
+                      <div className="text-xs text-base-content/60 flex items-center gap-1 mt-0.5">
+                        <Mail size={11} /> {m.email}
+                      </div>
                     </div>
                   </div>
-                  <div className="absolute -bottom-2 -right-2 w-7 h-7 rounded-full bg-[#12141c] border border-[#d4af37] flex items-center justify-center text-[#d4af37] shadow">
-                    <Shield size={14} />
+                ),
+              },
+              {
+                header: "Assigned Role",
+                render: (m) => {
+                  const roleCfg = ROLE_CONFIG[m.role] || {
+                    label: m.role,
+                    badge: "badge-ghost",
+                  };
+                  return (
+                    <span className={`badge ${roleCfg.badge} badge-sm font-semibold capitalize`}>
+                      {roleCfg.label}
+                    </span>
+                  );
+                },
+              },
+              {
+                header: "Contact",
+                render: (m) => (
+                  <div className="text-xs text-base-content/70">
+                    {m.phone ? (
+                      <span className="flex items-center gap-1 font-mono">
+                        <Phone size={11} className="text-primary" /> {m.phone}
+                      </span>
+                    ) : (
+                      <span className="italic text-base-content/40">No phone</span>
+                    )}
                   </div>
-                </div>
-
-                <h3 className="text-lg font-black text-white tracking-tight">
-                  {previewUser.full_name || previewUser.username}
-                </h3>
-                <p className="text-xs text-[#d4af37] font-mono">@{previewUser.username}</p>
-
-                {/* Role Medallion */}
-                <div
-                  className="mt-3 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase inline-flex items-center gap-1.5 shadow"
-                  style={{
-                    backgroundColor: previewRole.bg,
-                    color: previewRole.text,
-                    border: `1px solid ${previewRole.border}`,
-                  }}
-                >
-                  <previewRole.icon size={13} />
-                  {previewRole.label}
-                </div>
-              </div>
-
-              {/* Credential Data Grid */}
-              <div className="mt-4 p-3.5 rounded-2xl bg-black/50 border border-[#d4af37]/20 space-y-2 text-xs">
-                <div className="flex justify-between items-center text-neutral-400">
-                  <span>Badge ID:</span>
-                  <span className="font-mono text-[#d4af37] font-bold">EMP-{String(previewUser.id || "101").padStart(4, "0")}</span>
-                </div>
-                <div className="flex justify-between items-center text-neutral-400">
-                  <span>Email:</span>
-                  <span className="text-neutral-200 truncate max-w-[150px]">{previewUser.email}</span>
-                </div>
-                <div className="flex justify-between items-center text-neutral-400">
-                  <span>System Access:</span>
-                  <span className={previewUser.is_active ? "text-emerald-400 font-semibold" : "text-rose-400 font-semibold"}>
-                    {previewUser.is_active ? "Authorized & Active" : "Suspended"}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-neutral-400">
-                  <span>Last Sign-In:</span>
-                  <span className="text-neutral-300">{formatDate(previewUser.last_login)}</span>
-                </div>
-              </div>
-
-              {/* Bottom NFC & Holographic Barcode */}
-              <div className="mt-5 pt-3 border-t border-[#d4af37]/20 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-neutral-500">
-                  <QrCode size={26} className="text-[#d4af37]" />
-                  <div className="text-[9px] uppercase tracking-wider text-neutral-400 font-mono">
-                    HOLO-VERIFIED<br />256-BIT ENCRYPTED
+                ),
+              },
+              {
+                header: "Status",
+                render: (m) => (
+                  <button
+                    onClick={() => handleToggleActive(m)}
+                    className="cursor-pointer group flex items-center gap-1.5"
+                    title={`Click to ${m.is_active ? "deactivate" : "activate"}`}
+                  >
+                    <span
+                      className={`badge ${
+                        m.is_active ? "badge-success" : "badge-error"
+                      } badge-sm font-semibold`}
+                    >
+                      {m.is_active ? "Active" : "Suspended"}
+                    </span>
+                  </button>
+                ),
+              },
+              {
+                header: "Actions",
+                className: "text-right",
+                render: (m) => (
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="btn-square btn-xs"
+                      onClick={() => openResetModal(m)}
+                      title="Reset Password"
+                    >
+                      <KeyRound size={14} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="btn-square btn-xs"
+                      onClick={() => openEditModal(m)}
+                      title="Edit Staff Member"
+                    >
+                      <Edit size={14} />
+                    </Button>
+                    {m.id !== currentUser?.id && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="btn-square btn-xs text-error hover:bg-error/10"
+                        onClick={() => setDeleteTarget(m)}
+                        title="Delete Account"
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    )}
                   </div>
-                </div>
+                ),
+              },
+            ]}
+          />
+        </div>
 
-                <div className="text-right">
-                  <div className="text-[10px] text-[#d4af37] font-bold uppercase tracking-wider">
-                    SMART CHIP
-                  </div>
-                  <div className="text-[9px] text-neutral-500 font-mono">RFID ENABLED</div>
-                </div>
+        {/* Right Column (1 col): Selected Staff Plaque */}
+        <div>
+          <Card>
+            <div className="flex items-center justify-between pb-3 border-b border-base-content/10 mb-4">
+              <div className="flex items-center gap-2">
+                <Sparkles size={16} className="text-primary" />
+                <h3 className="font-bold text-base-content text-sm">Staff Security Profile</h3>
               </div>
+              <span className="badge badge-outline badge-xs font-mono">ID VERIFIED</span>
             </div>
-          </Tilt3D>
+
+            {selectedMember ? (
+              <div className="space-y-4">
+                <div className="p-4 rounded-2xl bg-base-100 border-2 border-primary/30 shadow-md text-center flex flex-col items-center">
+                  <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary border border-primary/30 flex items-center justify-center font-black text-2xl mb-3">
+                    {(selectedMember.first_name || selectedMember.username || "U").charAt(0).toUpperCase()}
+                  </div>
+                  <h4 className="font-bold text-base text-base-content">
+                    {selectedMember.full_name || selectedMember.username}
+                  </h4>
+                  <div className="text-xs text-base-content/60 font-mono mt-0.5">
+                    @{selectedMember.username}
+                  </div>
+                  <div className="mt-2">
+                    <span
+                      className={`badge ${
+                        ROLE_CONFIG[selectedMember.role]?.badge || "badge-ghost"
+                      } badge-sm font-bold`}
+                    >
+                      {ROLE_CONFIG[selectedMember.role]?.label || selectedMember.role}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-base-content/60 mt-2 px-2">
+                    {ROLE_CONFIG[selectedMember.role]?.description}
+                  </p>
+                </div>
+
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between py-1.5 border-b border-base-content/10">
+                    <span className="text-base-content/60">Email:</span>
+                    <span className="font-medium text-base-content">{selectedMember.email}</span>
+                  </div>
+                  <div className="flex justify-between py-1.5 border-b border-base-content/10">
+                    <span className="text-base-content/60">Phone:</span>
+                    <span className="font-medium text-base-content">{selectedMember.phone || "Not set"}</span>
+                  </div>
+                  <div className="flex justify-between py-1.5 border-b border-base-content/10">
+                    <span className="text-base-content/60">Status:</span>
+                    <span className={selectedMember.is_active ? "text-success font-bold" : "text-error font-bold"}>
+                      {selectedMember.is_active ? "Authorized & Active" : "Suspended"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between py-1.5 border-b border-base-content/10">
+                    <span className="text-base-content/60">Joined:</span>
+                    <span className="font-mono text-base-content/80">
+                      {selectedMember.date_joined ? new Date(selectedMember.date_joined).toLocaleDateString() : "Recent"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => openEditModal(selectedMember)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => openResetModal(selectedMember)}
+                  >
+                    Reset Key
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="py-12 text-center text-xs text-base-content/50">
+                Click any staff member from the directory table to inspect their credentials and access privileges.
+              </div>
+            )}
+          </Card>
         </div>
       </div>
 
-      {/* ================= ADD STAFF MODAL ================= */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="card-3d w-full max-w-lg rounded-3xl p-6 border-2 border-[#d4af37]/40 shadow-[0_25px_60px_rgba(0,0,0,0.9)] relative">
-            <div className="flex items-center justify-between pb-4 border-b border-[#d4af37]/20">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#d4af37]/15 border border-[#d4af37]/40 flex items-center justify-center text-[#d4af37]">
-                  <UserPlus size={20} />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white">Enroll New Staff Member</h3>
-                  <p className="text-xs text-neutral-400">Create employee credentials and assign security privileges.</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="p-1 rounded-lg text-neutral-400 hover:text-white"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleAddSubmit} className="mt-5 space-y-4">
-              {getFormAlert() && (
-                <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
-                  <AlertCircle size={16} className="shrink-0 text-rose-400" />
-                  <span>{getFormAlert()}</span>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">First Name</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. John"
-                    value={formData.first_name}
-                    onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-[#d4af37]/30 text-sm text-neutral-200 focus:outline-none focus:border-[#d4af37]"
-                  />
-                  {getFieldError("first_name") && (
-                    <p className="text-xs text-rose-400 mt-1">{getFieldError("first_name")}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">Last Name</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Doe"
-                    value={formData.last_name}
-                    onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-[#d4af37]/30 text-sm text-neutral-200 focus:outline-none focus:border-[#d4af37]"
-                  />
-                  {getFieldError("last_name") && (
-                    <p className="text-xs text-rose-400 mt-1">{getFieldError("last_name")}</p>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1">
-                  Email Address <span className="text-rose-400">*</span>
-                </label>
-                <input
-                  type="email"
-                  placeholder="employee@enterprise.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-[#d4af37]/30 text-sm text-neutral-200 focus:outline-none focus:border-[#d4af37]"
-                  required
-                />
-                {getFieldError("email") && (
-                  <p className="text-xs text-rose-400 mt-1">{getFieldError("email")}</p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">Username (Optional)</label>
-                  <input
-                    type="text"
-                    placeholder="Auto-generated if empty"
-                    value={formData.username}
-                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-[#d4af37]/30 text-sm text-neutral-200 focus:outline-none focus:border-[#d4af37]"
-                  />
-                  {getFieldError("username") && (
-                    <p className="text-xs text-rose-400 mt-1">{getFieldError("username")}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">Phone Number</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. +91 98765 43210"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-[#d4af37]/30 text-sm text-neutral-200 focus:outline-none focus:border-[#d4af37]"
-                  />
-                  {getFieldError("phone") && (
-                    <p className="text-xs text-rose-400 mt-1">{getFieldError("phone")}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">System Role</label>
-                  <select
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-[#d4af37]/30 text-sm text-neutral-200 focus:outline-none focus:border-[#d4af37]"
-                  >
-                    <option value="employee" className="bg-[#12141c]">Staff / Cashier</option>
-                    <option value="manager" className="bg-[#12141c]">Store Manager</option>
-                    <option value="admin" className="bg-[#12141c]">Administrator</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">Initial Password</label>
-                  <div className="relative">
-                    <input
-                      type={showAddPassword ? "text" : "password"}
-                      placeholder="Min. 6 chars (or default)"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className="w-full pl-3.5 pr-9 py-2.5 rounded-xl bg-black/50 border border-[#d4af37]/30 text-sm text-neutral-200 focus:outline-none focus:border-[#d4af37]"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowAddPassword(!showAddPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white"
-                    >
-                      {showAddPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
-                  </div>
-                  {getFieldError("password") && (
-                    <p className="text-xs text-rose-400 mt-1">{getFieldError("password")}</p>
-                  )}
-                </div>
-              </div>
-
-
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-[#d4af37]/20">
-                <Button3D variant="dark" type="button" onClick={() => setIsAddModalOpen(false)}>
-                  Cancel
-                </Button3D>
-                <Button3D variant="gold" type="submit" disabled={submitting}>
-                  {submitting ? "Creating..." : "Enroll Staff Member"}
-                </Button3D>
-              </div>
-            </form>
+      {/* Add Staff Modal */}
+      <Modal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        title="Provision New Staff Account"
+        maxWidth="max-w-xl"
+      >
+        <form onSubmit={handleAddSubmit} className="space-y-4 pt-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="First Name"
+              placeholder="e.g. Rachel"
+              value={formData.first_name}
+              onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+            />
+            <Input
+              label="Last Name"
+              placeholder="e.g. Green"
+              value={formData.last_name}
+              onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+            />
           </div>
-        </div>
-      )}
 
-      {/* ================= EDIT STAFF MODAL ================= */}
-      {isEditModalOpen && editingMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="card-3d w-full max-w-lg rounded-3xl p-6 border-2 border-[#d4af37]/40 shadow-[0_25px_60px_rgba(0,0,0,0.9)] relative">
-            <div className="flex items-center justify-between pb-4 border-b border-[#d4af37]/20">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-[#d4af37]/40 flex items-center justify-center text-[#d4af37]">
-                  <Edit size={20} />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white">Modify Staff Profile</h3>
-                  <p className="text-xs text-neutral-400">Updating account details for @{editingMember.username}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsEditModalOpen(false)}
-                className="p-1 rounded-lg text-neutral-400 hover:text-white"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleEditSubmit} className="mt-5 space-y-4">
-              {getFormAlert() && (
-                <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
-                  <AlertCircle size={16} className="shrink-0 text-rose-400" />
-                  <span>{getFormAlert()}</span>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">First Name</label>
-                  <input
-                    type="text"
-                    value={formData.first_name}
-                    onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-[#d4af37]/30 text-sm text-neutral-200 focus:outline-none focus:border-[#d4af37]"
-                  />
-                  {getFieldError("first_name") && (
-                    <p className="text-xs text-rose-400 mt-1">{getFieldError("first_name")}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">Last Name</label>
-                  <input
-                    type="text"
-                    value={formData.last_name}
-                    onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-[#d4af37]/30 text-sm text-neutral-200 focus:outline-none focus:border-[#d4af37]"
-                  />
-                  {getFieldError("last_name") && (
-                    <p className="text-xs text-rose-400 mt-1">{getFieldError("last_name")}</p>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1">
-                  Email Address <span className="text-rose-400">*</span>
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-[#d4af37]/30 text-sm text-neutral-200 focus:outline-none focus:border-[#d4af37]"
-                  required
-                />
-                {getFieldError("email") && <p className="text-xs text-rose-400 mt-1">{getFieldError("email")}</p>}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">Role Hierarchy</label>
-                  <select
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-[#d4af37]/30 text-sm text-neutral-200 focus:outline-none focus:border-[#d4af37]"
-                  >
-                    <option value="employee" className="bg-[#12141c]">Staff / Cashier</option>
-                    <option value="manager" className="bg-[#12141c]">Store Manager</option>
-                    <option value="admin" className="bg-[#12141c]">Administrator</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-300 mb-1">Phone Number</label>
-                  <input
-                    type="text"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-[#d4af37]/30 text-sm text-neutral-200 focus:outline-none focus:border-[#d4af37]"
-                  />
-                  {getFieldError("phone") && (
-                    <p className="text-xs text-rose-400 mt-1">{getFieldError("phone")}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-[#d4af37]/20">
-                <Button3D variant="dark" type="button" onClick={() => setIsEditModalOpen(false)}>
-                  Cancel
-                </Button3D>
-                <Button3D variant="gold" type="submit" disabled={submitting}>
-                  {submitting ? "Saving..." : "Save Changes"}
-                </Button3D>
-              </div>
-            </form>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Username (Login Handle)"
+              placeholder="e.g. rachel.green"
+              value={formData.username}
+              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+              error={formErrors.username}
+            />
+            <Input
+              label="Email Address"
+              type="email"
+              required
+              placeholder="staff@company.com"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              error={formErrors.email}
+            />
           </div>
-        </div>
-      )}
 
-      {/* ================= RESET PASSWORD MODAL ================= */}
-      {isResetModalOpen && resetTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="card-3d w-full max-w-md rounded-3xl p-6 border-2 border-[#d4af37]/40 shadow-[0_25px_60px_rgba(0,0,0,0.9)] relative">
-            <div className="flex items-center justify-between pb-4 border-b border-[#d4af37]/20">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#d4af37]/15 border border-[#d4af37]/40 flex items-center justify-center text-[#d4af37]">
-                  <KeyRound size={20} />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white">Reset Security Key</h3>
-                  <p className="text-xs text-neutral-400">Reassign credentials for @{resetTarget.username}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsResetModalOpen(false)}
-                className="p-1 rounded-lg text-neutral-400 hover:text-white"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleResetSubmit} className="mt-5 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1">New Password</label>
-                <div className="relative">
-                  <input
-                    type={showResetPassword ? "text" : "password"}
-                    placeholder="Min. 6 characters"
-                    value={resetData.new_password}
-                    onChange={(e) => setResetData({ ...resetData, new_password: e.target.value })}
-                    className="w-full pl-3.5 pr-9 py-2.5 rounded-xl bg-black/50 border border-[#d4af37]/30 text-sm text-neutral-200 focus:outline-none focus:border-[#d4af37]"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowResetPassword(!showResetPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white"
-                  >
-                    {showResetPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                  </button>
-                </div>
-                {(resetErrors.new_password || resetErrors.errors?.new_password) && (
-                  <p className="text-xs text-rose-400 mt-1">
-                    {Array.isArray(resetErrors.new_password || resetErrors.errors?.new_password)
-                      ? (resetErrors.new_password || resetErrors.errors?.new_password)[0]
-                      : (resetErrors.new_password || resetErrors.errors?.new_password)}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-neutral-300 mb-1">Confirm New Password</label>
-                <input
-                  type={showResetPassword ? "text" : "password"}
-                  placeholder="Repeat new password"
-                  value={resetData.new_password_confirm}
-                  onChange={(e) => setResetData({ ...resetData, new_password_confirm: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-[#d4af37]/30 text-sm text-neutral-200 focus:outline-none focus:border-[#d4af37]"
-                  required
-                />
-                {(resetErrors.new_password_confirm || resetErrors.errors?.new_password_confirm) && (
-                  <p className="text-xs text-rose-400 mt-1">
-                    {Array.isArray(resetErrors.new_password_confirm || resetErrors.errors?.new_password_confirm)
-                      ? (resetErrors.new_password_confirm || resetErrors.errors?.new_password_confirm)[0]
-                      : (resetErrors.new_password_confirm || resetErrors.errors?.new_password_confirm)}
-                  </p>
-                )}
-              </div>
-
-
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-[#d4af37]/20">
-                <Button3D variant="dark" type="button" onClick={() => setIsResetModalOpen(false)}>
-                  Cancel
-                </Button3D>
-                <Button3D variant="gold" type="submit" disabled={resetting}>
-                  {resetting ? "Resetting..." : "Commit Password"}
-                </Button3D>
-              </div>
-            </form>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Contact Phone"
+              placeholder="+91 9876543210"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            />
+            <Select
+              label="System Role & Permissions"
+              value={formData.role}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              options={[
+                { value: "employee", label: "Cashier / Staff (POS Only)" },
+                { value: "manager", label: "Store Manager (Ops & Inventory)" },
+                { value: "admin", label: "Administrator (Full Privileges)" },
+              ]}
+            />
           </div>
-        </div>
-      )}
 
-      {/* ================= DELETE CONFIRMATION MODAL ================= */}
-      {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="card-3d w-full max-w-md rounded-3xl p-6 border-2 border-rose-500/40 shadow-[0_25px_60px_rgba(0,0,0,0.9)] relative">
-            <div className="flex items-center gap-3 pb-4 border-b border-rose-500/20">
-              <div className="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/40 flex items-center justify-center text-rose-400">
-                <ShieldAlert size={20} />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-white">Revoke Account & Purge</h3>
-                <p className="text-xs text-neutral-400">Irreversible credential revocation</p>
-              </div>
-            </div>
+          <Input
+            label="Initial Account Password"
+            type={showAddPassword ? "text" : "password"}
+            placeholder="At least 6 characters"
+            value={formData.password}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            error={formErrors.password}
+          />
 
-            <p className="text-sm text-neutral-300 mt-4 leading-relaxed">
-              Are you sure you want to permanently delete the staff member{" "}
-              <strong className="text-white">
-                {deleteTarget.full_name || deleteTarget.username}
-              </strong>{" "}
-              (<span className="font-mono text-xs text-[#d4af37]">@{deleteTarget.username}</span>)?
-              Their historical transaction logs and sales records will remain preserved for audit compliance.
-            </p>
+          <div className="flex justify-end gap-3 pt-3 border-t border-base-content/10">
+            <Button variant="ghost" onClick={() => setIsAddModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit" loading={submitting}>
+              Create Staff Account
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
-            <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-[#d4af37]/20">
-              <Button3D variant="dark" onClick={() => setDeleteTarget(null)}>
-                Cancel
-              </Button3D>
-              <Button3D variant="danger" onClick={handleDeleteSubmit} disabled={deleting}>
-                {deleting ? "Purging..." : "Confirm Purge"}
-              </Button3D>
+      {/* Edit Staff Modal */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title={`Edit Staff Profile: ${editingMember?.username}`}
+        maxWidth="max-w-xl"
+      >
+        <form onSubmit={handleEditSubmit} className="space-y-4 pt-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="First Name"
+              value={formData.first_name}
+              onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+            />
+            <Input
+              label="Last Name"
+              value={formData.last_name}
+              onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Email Address"
+              type="email"
+              required
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              error={formErrors.email}
+            />
+            <Input
+              label="Phone Number"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Select
+              label="Assigned System Role"
+              value={formData.role}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              options={[
+                { value: "employee", label: "Cashier / Staff (POS Only)" },
+                { value: "manager", label: "Store Manager (Ops & Inventory)" },
+                { value: "admin", label: "Administrator (Full Privileges)" },
+              ]}
+            />
+            <Select
+              label="Account Authorization Status"
+              value={formData.is_active ? "true" : "false"}
+              onChange={(e) => setFormData({ ...formData, is_active: e.target.value === "true" })}
+              options={[
+                { value: "true", label: "Active & Authorized" },
+                { value: "false", label: "Suspended / Inactive" },
+              ]}
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-3 border-t border-base-content/10">
+            <Button variant="ghost" onClick={() => setIsEditModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit" loading={submitting}>
+              Save Profile Changes
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Reset Password Modal */}
+      <Modal
+        isOpen={isResetModalOpen}
+        onClose={() => setIsResetModalOpen(false)}
+        title={`Reset Security Key: ${resetTarget?.username}`}
+        maxWidth="max-w-md"
+      >
+        <form onSubmit={handleResetSubmit} className="space-y-4 pt-2">
+          <Input
+            label="New Password"
+            type={showResetPassword ? "text" : "password"}
+            required
+            placeholder="Minimum 6 characters"
+            value={resetData.new_password}
+            onChange={(e) => setResetData({ ...resetData, new_password: e.target.value })}
+            error={resetErrors.new_password}
+          />
+          <Input
+            label="Confirm New Password"
+            type={showResetPassword ? "text" : "password"}
+            required
+            placeholder="Repeat new password"
+            value={resetData.new_password_confirm}
+            onChange={(e) => setResetData({ ...resetData, new_password_confirm: e.target.value })}
+            error={resetErrors.new_password_confirm}
+          />
+
+          <div className="flex justify-end gap-3 pt-3 border-t border-base-content/10">
+            <Button variant="ghost" onClick={() => setIsResetModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit" loading={resetting}>
+              Reset Password
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        title="Revoke Staff Account"
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4 pt-2">
+          <div className="flex items-start gap-3 p-3 rounded-xl bg-error/10 text-error border border-error/20">
+            <AlertCircle size={20} className="shrink-0 mt-0.5" />
+            <div className="text-xs leading-relaxed">
+              Are you sure you want to permanently delete user{" "}
+              <strong className="font-bold">{deleteTarget?.username}</strong> ({deleteTarget?.email})?
+              All associated audit trails will remain, but this account will no longer be able to authenticate.
             </div>
           </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="ghost" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button variant="danger" loading={deleting} onClick={handleDelete}>
+              Revoke Account
+            </Button>
+          </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

@@ -2,25 +2,18 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import {
   AlertCircle,
-  AlertTriangle,
-  ArrowDownRight,
-  ArrowUpRight,
   BadgePercent,
   BarChart3,
   Boxes,
   Calendar,
-  CreditCard,
   DollarSign,
   Download,
-  FileSpreadsheet,
   FileText,
-  Filter,
   Package,
   Printer,
   RefreshCw,
   Scale,
   ShoppingBag,
-  Sparkles,
   TrendingDown,
   TrendingUp,
   Wallet,
@@ -33,16 +26,14 @@ import {
   CartesianGrid,
   Cell,
   Legend,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 import reportService from "../services/reportService";
-import Tilt3D from "../components/3d/Tilt3D";
-import Button3D from "../components/3d/Button3D";
+import { useTheme } from "../context/ThemeContext";
+import { Badge, Button, Card, StatsCard, Table } from "../components/ui";
 
 const TABS = [
   { id: "profit_loss", label: "Profit & Loss (P&L)", icon: Scale },
@@ -59,18 +50,10 @@ const PRESETS = [
   { id: "today", label: "Today" },
 ];
 
-const GOLD_CHART_PALETTE = [
-  "#D4AF37",
-  "#F7DF8F",
-  "#10B981",
-  "#F59E0B",
-  "#3B82F6",
-  "#A855F7",
-  "#EC4899",
-  "#64748B",
-];
-
 export default function ReportsPage() {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
   const [activeTab, setActiveTab] = useState("profit_loss");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -192,54 +175,49 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="space-y-8 pb-14 text-white">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#d4af37]/10 border border-[#d4af37]/30 text-xs font-semibold tracking-wider text-[#d4af37] mb-2 uppercase">
-            <Scale size={14} className="text-[#d4af37]" />
-            Business Intelligence & Executive Analytics
-          </div>
-          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-amber-100 via-[#d4af37] to-amber-500 bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-base-content tracking-tight">
             Financial Studio & Reports
           </h1>
-          <p className="text-sm text-neutral-400 mt-1 max-w-2xl">
+          <p className="text-sm text-base-content/70 mt-1">
             Realtime balance sheets, profit & loss statements, inventory asset valuation, and revenue distribution channels.
           </p>
         </div>
-
         <div className="flex items-center gap-3">
-          <Button3D
-            variant="dark"
-            onClick={() => loadActiveTabReport(true)}
-            disabled={refreshing}
+          <Button
+            variant="ghost"
+            size="sm"
             icon={RefreshCw}
-            className={refreshing ? "opacity-75" : ""}
+            onClick={() => loadActiveTabReport(true)}
+            loading={refreshing}
           >
-            {refreshing ? "Refreshing..." : "Refresh"}
-          </Button3D>
-
-          <Button3D
-            variant="dark"
-            onClick={handlePrint}
+            Refresh
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             icon={Printer}
+            onClick={handlePrint}
           >
             Print
-          </Button3D>
-
-          <Button3D
-            variant="gold"
-            onClick={handleExportCsv}
-            disabled={exporting}
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
             icon={Download}
+            onClick={handleExportCsv}
+            loading={exporting}
           >
-            {exporting ? "Exporting..." : "Export CSV"}
-          </Button3D>
+            Export CSV
+          </Button>
         </div>
       </div>
 
-      {/* Tabs Bar */}
-      <div className="card-3d p-1.5 rounded-2xl border border-[#d4af37]/20 flex flex-wrap gap-2">
+      {/* Tabs */}
+      <div className="tabs tabs-boxed bg-base-200 p-1.5 rounded-2xl grid grid-cols-2 md:grid-cols-4 gap-1">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -247,10 +225,8 @@ export default function ReportsPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 min-w-[170px] py-3 px-4 rounded-xl flex items-center justify-center gap-2.5 text-xs font-bold transition-all ${
-                isActive
-                  ? "bg-gradient-to-r from-[#d4af37] to-[#f7df8f] text-black shadow-[0_4px_20px_rgba(212,175,55,0.4)] scale-[1.01]"
-                  : "text-neutral-400 hover:text-white hover:bg-white/[0.04]"
+              className={`tab h-11 text-xs md:text-sm font-bold gap-2 transition-all rounded-xl ${
+                isActive ? "tab-active bg-primary text-primary-content shadow-md" : "text-base-content/70 hover:text-base-content"
               }`}
             >
               <Icon size={16} />
@@ -260,552 +236,418 @@ export default function ReportsPage() {
         })}
       </div>
 
-      {/* Date Filter Bar (Hidden for Inventory as it represents live on-hand valuation) */}
+      {/* Date Filter Bar (Hidden for live Inventory) */}
       {activeTab !== "inventory" && (
-        <div className="card-3d p-4 rounded-2xl border border-[#d4af37]/20 flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold text-neutral-400 mr-1">Time Horizon:</span>
-            {PRESETS.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => applyPreset(p.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-medium transition ${
-                  datePreset === p.id
-                    ? "bg-[#d4af37] text-black font-bold shadow"
-                    : "bg-black/40 border border-[#d4af37]/20 text-neutral-400 hover:text-white"
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
+        <Card>
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold text-base-content/60 mr-1">Time Horizon:</span>
+              {PRESETS.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => applyPreset(p.id)}
+                  className={`btn btn-xs ${
+                    datePreset === p.id ? "btn-primary font-bold shadow-sm" : "btn-ghost"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
 
-          <div className="flex items-center gap-2 text-xs">
-            <div className="flex items-center gap-1.5 bg-black/40 px-3 py-1.5 rounded-xl border border-[#d4af37]/25">
-              <Calendar size={13} className="text-[#d4af37]" />
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => {
-                  setDatePreset("custom");
-                  setStartDate(e.target.value);
-                }}
-                className="bg-transparent text-neutral-200 focus:outline-none text-xs"
-              />
-            </div>
-            <span className="text-neutral-500">to</span>
-            <div className="flex items-center gap-1.5 bg-black/40 px-3 py-1.5 rounded-xl border border-[#d4af37]/25">
-              <Calendar size={13} className="text-[#d4af37]" />
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => {
-                  setDatePreset("custom");
-                  setEndDate(e.target.value);
-                }}
-                className="bg-transparent text-neutral-200 focus:outline-none text-xs"
-              />
+            <div className="flex items-center gap-2 text-xs">
+              <div className="flex items-center gap-1.5 bg-base-100 px-3 py-1.5 rounded-lg border border-base-content/20">
+                <Calendar size={13} className="text-primary shrink-0" />
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => {
+                    setDatePreset("custom");
+                    setStartDate(e.target.value);
+                  }}
+                  className="bg-transparent text-base-content focus:outline-none text-xs"
+                />
+              </div>
+              <span className="text-base-content/40 font-semibold">to</span>
+              <div className="flex items-center gap-1.5 bg-base-100 px-3 py-1.5 rounded-lg border border-base-content/20">
+                <Calendar size={13} className="text-primary shrink-0" />
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => {
+                    setDatePreset("custom");
+                    setEndDate(e.target.value);
+                  }}
+                  className="bg-transparent text-base-content focus:outline-none text-xs"
+                />
+              </div>
             </div>
           </div>
-        </div>
+        </Card>
       )}
 
-      {/* Content Area according to Active Tab */}
+      {/* Content Area */}
       {loading ? (
         <div className="p-20 flex flex-col items-center justify-center">
-          <RefreshCw size={32} className="animate-spin text-[#d4af37] mb-3" />
-          <p className="text-sm text-neutral-400">Synthesizing executive analytics report...</p>
+          <RefreshCw size={32} className="animate-spin text-primary mb-3" />
+          <p className="text-sm text-base-content/60">Synthesizing executive analytics report...</p>
         </div>
       ) : (
         <>
           {/* ================= 1. PROFIT & LOSS TAB ================= */}
           {activeTab === "profit_loss" && plData && (
-            <div className="space-y-8 animate-in fade-in duration-300">
-              {/* 4 KPI Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                <Tilt3D intensity={12}>
-                  <div className="card-3d p-5 rounded-2xl relative overflow-hidden">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">Total Revenue</span>
-                      <div className="w-10 h-10 rounded-xl bg-[#d4af37]/15 border border-[#d4af37]/30 flex items-center justify-center text-[#d4af37]">
-                        <ShoppingBag size={20} />
-                      </div>
-                    </div>
-                    <div className="text-3xl font-black mt-3 text-white tracking-tight">
-                      {formatCurrency(plData.revenue)}
-                    </div>
-                    <div className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#d4af37]"></span>
-                      Gross customer sales
-                    </div>
-                  </div>
-                </Tilt3D>
-
-                <Tilt3D intensity={12}>
-                  <div className="card-3d p-5 rounded-2xl relative overflow-hidden">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">COGS (Inventory Cost)</span>
-                      <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400">
-                        <Boxes size={20} />
-                      </div>
-                    </div>
-                    <div className="text-3xl font-black mt-3 text-blue-300 tracking-tight">
-                      {formatCurrency(plData.cost_of_goods_sold)}
-                    </div>
-                    <div className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
-                      Product acquisition cost
-                    </div>
-                  </div>
-                </Tilt3D>
-
-                <Tilt3D intensity={12}>
-                  <div className="card-3d p-5 rounded-2xl relative overflow-hidden">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">Gross Margin</span>
-                      <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300">
-                        <TrendingUp size={20} />
-                      </div>
-                    </div>
-                    <div className="text-3xl font-black mt-3 text-amber-300 tracking-tight">
-                      {formatCurrency(plData.gross_profit)}
-                    </div>
-                    <div className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                      {plData.gross_margin_pct || "0"}% gross margin
-                    </div>
-                  </div>
-                </Tilt3D>
-
-                <Tilt3D intensity={12}>
-                  <div className="card-3d p-5 rounded-2xl relative overflow-hidden">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">Net Profit</span>
-                      <div
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center border ${
-                          plData.net_profit >= 0
-                            ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-                            : "bg-rose-500/15 border-rose-500/30 text-rose-400"
-                        }`}
-                      >
-                        <Scale size={20} />
-                      </div>
-                    </div>
-                    <div
-                      className={`text-3xl font-black mt-3 tracking-tight ${
-                        plData.net_profit >= 0 ? "text-emerald-400" : "text-rose-400"
-                      }`}
-                    >
-                      {formatCurrency(plData.net_profit)}
-                    </div>
-                    <div className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          plData.net_profit >= 0 ? "bg-emerald-400" : "bg-rose-400"
-                        }`}
-                      ></span>
-                      {plData.net_margin_pct || "0"}% net margin
-                    </div>
-                  </div>
-                </Tilt3D>
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatsCard
+                  title="Total Revenue"
+                  value={formatCurrency(plData.revenue)}
+                  icon={ShoppingBag}
+                  color="primary"
+                  description="Gross customer sales"
+                />
+                <StatsCard
+                  title="COGS (Inventory Cost)"
+                  value={formatCurrency(plData.cost_of_goods_sold)}
+                  icon={Boxes}
+                  color="secondary"
+                  description="Product acquisition cost"
+                />
+                <StatsCard
+                  title="Gross Profit"
+                  value={formatCurrency(plData.gross_profit)}
+                  icon={TrendingUp}
+                  color="accent"
+                  description={`${plData.gross_margin_pct || "0"}% gross margin`}
+                />
+                <StatsCard
+                  title="Net Profit"
+                  value={formatCurrency(plData.net_profit)}
+                  icon={Scale}
+                  color={plData.net_profit >= 0 ? "accent" : "error"}
+                  description={`${plData.net_margin_pct || "0"}% net margin`}
+                />
               </div>
 
-              {/* Waterfall Breakdown Card */}
-              <div className="card-3d p-6 rounded-2xl border border-[#d4af37]/20">
-                <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
-                  <Scale size={18} className="text-[#d4af37]" />
+              {/* Financial Statement Breakdown */}
+              <Card>
+                <h3 className="font-bold text-base-content text-base mb-4 flex items-center gap-2">
+                  <Scale size={18} className="text-primary" />
                   Financial Statement Breakdown
                 </h3>
 
                 <div className="space-y-3 text-sm">
-                  <div className="flex items-center justify-between py-2 border-b border-[#d4af37]/10">
-                    <span className="text-neutral-300 font-semibold">(+) Total Gross Revenue</span>
-                    <span className="font-mono text-white font-bold">{formatCurrency(plData.revenue)}</span>
+                  <div className="flex items-center justify-between py-2 border-b border-base-content/10">
+                    <span className="text-base-content/80 font-semibold">(+) Total Gross Revenue</span>
+                    <span className="font-mono text-base-content font-bold">{formatCurrency(plData.revenue)}</span>
                   </div>
 
-                  <div className="flex items-center justify-between py-2 border-b border-[#d4af37]/10 text-neutral-400">
+                  <div className="flex items-center justify-between py-2 border-b border-base-content/10 text-base-content/60">
                     <span>(-) Cost of Goods Sold (COGS)</span>
-                    <span className="font-mono text-blue-300">-{formatCurrency(plData.cost_of_goods_sold)}</span>
+                    <span className="font-mono text-info">-{formatCurrency(plData.cost_of_goods_sold)}</span>
                   </div>
 
-                  <div className="flex items-center justify-between py-2 border-b border-[#d4af37]/20 bg-white/[0.02] px-3 rounded-lg">
-                    <span className="text-amber-300 font-bold">(=) Gross Profit</span>
-                    <span className="font-mono text-amber-300 font-black">{formatCurrency(plData.gross_profit)}</span>
+                  <div className="flex items-center justify-between py-2.5 px-3 border-b border-base-content/10 bg-base-200 rounded-lg">
+                    <span className="text-primary font-bold">(=) Gross Profit</span>
+                    <span className="font-mono text-primary font-black">{formatCurrency(plData.gross_profit)}</span>
                   </div>
 
-                  <div className="flex items-center justify-between py-2 border-b border-[#d4af37]/10 text-neutral-400">
+                  <div className="flex items-center justify-between py-2 border-b border-base-content/10 text-base-content/60">
                     <span>(-) Total Operating Expenses</span>
-                    <span className="font-mono text-rose-300">-{formatCurrency(plData.operating_expenses)}</span>
+                    <span className="font-mono text-error">-{formatCurrency(plData.operating_expenses)}</span>
                   </div>
 
-                  <div className="flex items-center justify-between py-3 px-4 rounded-xl bg-black/60 border border-[#d4af37]/40 shadow-inner">
-                    <span className="text-sm font-black uppercase tracking-wider text-[#d4af37]">(=) Net Business Profit</span>
+                  <div className="flex items-center justify-between py-3 px-4 rounded-xl bg-base-200 border border-primary/30">
+                    <span className="text-sm font-black uppercase tracking-wider text-base-content">
+                      (=) Net Business Profit
+                    </span>
                     <span
                       className={`font-mono text-xl font-black ${
-                        plData.net_profit >= 0 ? "text-emerald-400" : "text-rose-400"
+                        plData.net_profit >= 0 ? "text-accent" : "text-error"
                       }`}
                     >
                       {formatCurrency(plData.net_profit)}
                     </span>
                   </div>
                 </div>
-              </div>
+              </Card>
             </div>
           )}
 
           {/* ================= 2. SALES & REVENUE TAB ================= */}
           {activeTab === "sales" && salesData && (
-            <div className="space-y-8 animate-in fade-in duration-300">
-              {/* 4 KPI Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                <Tilt3D intensity={12}>
-                  <div className="card-3d p-5 rounded-2xl relative overflow-hidden">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">Total Sales</span>
-                      <div className="w-10 h-10 rounded-xl bg-[#d4af37]/15 border border-[#d4af37]/30 flex items-center justify-center text-[#d4af37]">
-                        <DollarSign size={20} />
-                      </div>
-                    </div>
-                    <div className="text-3xl font-black mt-3 text-white tracking-tight">
-                      {formatCurrency(salesData.total_sales)}
-                    </div>
-                    <div className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#d4af37]"></span>
-                      Over selected timeframe
-                    </div>
-                  </div>
-                </Tilt3D>
-
-                <Tilt3D intensity={12}>
-                  <div className="card-3d p-5 rounded-2xl relative overflow-hidden">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">Invoiced Orders</span>
-                      <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400">
-                        <FileText size={20} />
-                      </div>
-                    </div>
-                    <div className="text-3xl font-black mt-3 text-blue-300 tracking-tight">
-                      {salesData.order_count || 0}
-                    </div>
-                    <div className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
-                      Completed transactions
-                    </div>
-                  </div>
-                </Tilt3D>
-
-                <Tilt3D intensity={12}>
-                  <div className="card-3d p-5 rounded-2xl relative overflow-hidden">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">Average Order</span>
-                      <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                        <TrendingUp size={20} />
-                      </div>
-                    </div>
-                    <div className="text-3xl font-black mt-3 text-emerald-300 tracking-tight">
-                      {formatCurrency(salesData.average_order_value)}
-                    </div>
-                    <div className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                      Average basket size
-                    </div>
-                  </div>
-                </Tilt3D>
-
-                <Tilt3D intensity={12}>
-                  <div className="card-3d p-5 rounded-2xl relative overflow-hidden">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">GST / Tax Collected</span>
-                      <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300">
-                        <BadgePercent size={20} />
-                      </div>
-                    </div>
-                    <div className="text-3xl font-black mt-3 text-amber-300 tracking-tight">
-                      {formatCurrency(salesData.total_tax)}
-                    </div>
-                    <div className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                      Tax liability collected
-                    </div>
-                  </div>
-                </Tilt3D>
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatsCard
+                  title="Total Sales"
+                  value={formatCurrency(salesData.total_sales)}
+                  icon={DollarSign}
+                  color="primary"
+                  description="Timeframe volume"
+                />
+                <StatsCard
+                  title="Invoiced Orders"
+                  value={salesData.order_count || 0}
+                  icon={FileText}
+                  color="secondary"
+                  description="Completed orders"
+                />
+                <StatsCard
+                  title="Average Basket"
+                  value={formatCurrency(salesData.average_order_value)}
+                  icon={TrendingUp}
+                  color="accent"
+                  description="Mean ticket size"
+                />
+                <StatsCard
+                  title="Tax Collected"
+                  value={formatCurrency(salesData.total_tax)}
+                  icon={BadgePercent}
+                  color="primary"
+                  description="Collected GST"
+                />
               </div>
 
-              {/* Sales Trend Chart */}
-              <div className="card-3d p-6 rounded-2xl border border-[#d4af37]/20">
-                <h3 className="text-base font-bold text-white mb-2 flex items-center gap-2">
-                  <BarChart3 size={18} className="text-[#d4af37]" />
-                  Sales Volume Curve
-                </h3>
-                <div className="h-64 w-full mt-4">
+              {/* Daily Sales Curve */}
+              <Card>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="font-bold text-base-content">Sales Volume Trajectory</h3>
+                    <p className="text-xs text-base-content/60">Daily performance curve across horizon</p>
+                  </div>
+                  <BarChart3 size={16} className="text-primary" />
+                </div>
+                <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={salesData.daily_trend || []} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                    <AreaChart data={salesData.daily_trend || []} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                       <defs>
                         <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.4} />
-                          <stop offset="95%" stopColor="#D4AF37" stopOpacity={0.0} />
+                          <stop offset="5%" stopColor="#d4af37" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#d4af37" stopOpacity={0.0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(212, 175, 55, 0.1)" />
-                      <XAxis dataKey="date" stroke="#64748b" tick={{ fill: "#94a3b8", fontSize: 11 }} />
-                      <YAxis stroke="#64748b" tick={{ fill: "#94a3b8", fontSize: 11 }} />
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke={isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}
+                      />
+                      <XAxis
+                        dataKey="date"
+                        stroke={isDark ? "#a39d91" : "#64748b"}
+                        fontSize={11}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        stroke={isDark ? "#a39d91" : "#64748b"}
+                        fontSize={11}
+                        tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`}
+                        tickLine={false}
+                      />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: "#12141c",
-                          border: "1px solid rgba(212, 175, 55, 0.4)",
-                          borderRadius: "12px",
-                          color: "#fff",
+                          backgroundColor: isDark ? "#12141c" : "#ffffff",
+                          borderColor: isDark ? "rgba(212,175,55,0.3)" : "#e2e8f0",
+                          borderRadius: "0.5rem",
+                          color: isDark ? "#f5f3ef" : "#0f172a",
+                          fontSize: "0.85rem",
                         }}
-                        formatter={(val) => [formatCurrency(val), "Sales"]}
+                        formatter={(val) => [formatCurrency(val), "Revenue"]}
                       />
-                      <Area type="monotone" dataKey="total" stroke="#D4AF37" strokeWidth={3} fill="url(#salesGrad)" />
+                      <Area type="monotone" dataKey="total" stroke="#d4af37" strokeWidth={2} fill="url(#salesGrad)" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
-              </div>
+              </Card>
 
-              {/* Top Selling Products Table */}
-              <div className="card-3d rounded-2xl overflow-hidden border border-[#d4af37]/20">
-                <div className="p-4 border-b border-[#d4af37]/20 bg-black/40">
-                  <h3 className="text-sm font-bold text-white">Top Performing Products</h3>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-[#d4af37]/20 bg-black/30 text-[11px] font-bold uppercase tracking-wider text-neutral-400">
-                        <th className="py-3 px-4">Product Name</th>
-                        <th className="py-3 px-4">Units Sold</th>
-                        <th className="py-3 px-4 text-right">Revenue Generated</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#d4af37]/10 text-sm">
-                      {(salesData.top_products || []).map((p, i) => (
-                        <tr key={i} className="table-row-3d hover:bg-white/[0.02] transition">
-                          <td className="py-3 px-4 font-medium text-neutral-200">{p.name}</td>
-                          <td className="py-3 px-4 text-neutral-400">{p.quantity_sold} units</td>
-                          <td className="py-3 px-4 text-right font-mono font-bold text-amber-300">
-                            {formatCurrency(p.revenue)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              {/* Top Performing Products */}
+              <Card>
+                <h3 className="font-bold text-base-content mb-3">Top Performing Products</h3>
+                <Table
+                  data={salesData.top_products || []}
+                  emptyTitle="No product sales recorded in range"
+                  columns={[
+                    {
+                      header: "Product Name",
+                      render: (p) => <div className="font-semibold text-base-content">{p.name}</div>,
+                    },
+                    {
+                      header: "Units Sold",
+                      render: (p) => (
+                        <span className="badge badge-ghost badge-sm font-semibold">
+                          {p.quantity_sold} units
+                        </span>
+                      ),
+                    },
+                    {
+                      header: "Revenue Generated",
+                      className: "text-right",
+                      render: (p) => (
+                        <div className="font-mono font-bold text-primary">
+                          {formatCurrency(p.revenue)}
+                        </div>
+                      ),
+                    },
+                  ]}
+                />
+              </Card>
             </div>
           )}
 
           {/* ================= 3. INVENTORY VALUATION TAB ================= */}
           {activeTab === "inventory" && inventoryData && (
-            <div className="space-y-8 animate-in fade-in duration-300">
-              {/* 4 KPI Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                <Tilt3D intensity={12}>
-                  <div className="card-3d p-5 rounded-2xl relative overflow-hidden">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">Total Catalog</span>
-                      <div className="w-10 h-10 rounded-xl bg-[#d4af37]/15 border border-[#d4af37]/30 flex items-center justify-center text-[#d4af37]">
-                        <Package size={20} />
-                      </div>
-                    </div>
-                    <div className="text-3xl font-black mt-3 text-white tracking-tight">
-                      {inventoryData.total_items || 0}
-                    </div>
-                    <div className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#d4af37]"></span>
-                      Active product lines
-                    </div>
-                  </div>
-                </Tilt3D>
-
-                <Tilt3D intensity={12}>
-                  <div className="card-3d p-5 rounded-2xl relative overflow-hidden">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">Cost Asset Valuation</span>
-                      <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400">
-                        <Boxes size={20} />
-                      </div>
-                    </div>
-                    <div className="text-3xl font-black mt-3 text-blue-300 tracking-tight">
-                      {formatCurrency(inventoryData.total_cost_value)}
-                    </div>
-                    <div className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
-                      Working capital locked in stock
-                    </div>
-                  </div>
-                </Tilt3D>
-
-                <Tilt3D intensity={12}>
-                  <div className="card-3d p-5 rounded-2xl relative overflow-hidden">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">Retail Potential</span>
-                      <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                        <DollarSign size={20} />
-                      </div>
-                    </div>
-                    <div className="text-3xl font-black mt-3 text-emerald-300 tracking-tight">
-                      {formatCurrency(inventoryData.total_retail_value)}
-                    </div>
-                    <div className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                      Projected retail recovery
-                    </div>
-                  </div>
-                </Tilt3D>
-
-                <Tilt3D intensity={12}>
-                  <div className="card-3d p-5 rounded-2xl relative overflow-hidden">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">Unrealized Profit</span>
-                      <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300">
-                        <TrendingUp size={20} />
-                      </div>
-                    </div>
-                    <div className="text-3xl font-black mt-3 text-amber-300 tracking-tight">
-                      {formatCurrency(inventoryData.potential_profit)}
-                    </div>
-                    <div className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                      Embedded asset margin
-                    </div>
-                  </div>
-                </Tilt3D>
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatsCard
+                  title="Catalog SKUs"
+                  value={inventoryData.total_items || 0}
+                  icon={Package}
+                  color="primary"
+                  description="Live product lines"
+                />
+                <StatsCard
+                  title="Cost Valuation"
+                  value={formatCurrency(inventoryData.total_cost_value)}
+                  icon={Boxes}
+                  color="secondary"
+                  description="Working capital locked"
+                />
+                <StatsCard
+                  title="Retail Potential"
+                  value={formatCurrency(inventoryData.total_retail_value)}
+                  icon={DollarSign}
+                  color="accent"
+                  description="Projected retail yield"
+                />
+                <StatsCard
+                  title="Unrealized Profit"
+                  value={formatCurrency(inventoryData.potential_profit)}
+                  icon={TrendingUp}
+                  color="primary"
+                  description="Asset profit margin"
+                />
               </div>
 
               {/* Category Valuation Bar Chart */}
-              <div className="card-3d p-6 rounded-2xl border border-[#d4af37]/20">
-                <h3 className="text-base font-bold text-white mb-2 flex items-center gap-2">
-                  <BarChart3 size={18} className="text-[#d4af37]" />
-                  Asset Valuation by Product Category
-                </h3>
-                <div className="h-64 w-full mt-4">
+              <Card>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="font-bold text-base-content">Asset Valuation by Category</h3>
+                    <p className="text-xs text-base-content/60">Capital allocation across product families</p>
+                  </div>
+                  <Boxes size={16} className="text-primary" />
+                </div>
+                <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={inventoryData.category_breakdown || []} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(212, 175, 55, 0.1)" />
-                      <XAxis dataKey="category" stroke="#64748b" tick={{ fill: "#94a3b8", fontSize: 11 }} />
-                      <YAxis stroke="#64748b" tick={{ fill: "#94a3b8", fontSize: 11 }} />
+                    <BarChart data={inventoryData.category_breakdown || []} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke={isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}
+                      />
+                      <XAxis
+                        dataKey="category"
+                        stroke={isDark ? "#a39d91" : "#64748b"}
+                        fontSize={11}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        stroke={isDark ? "#a39d91" : "#64748b"}
+                        fontSize={11}
+                        tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`}
+                        tickLine={false}
+                      />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: "#12141c",
-                          border: "1px solid rgba(212, 175, 55, 0.4)",
-                          borderRadius: "12px",
-                          color: "#fff",
+                          backgroundColor: isDark ? "#12141c" : "#ffffff",
+                          borderColor: isDark ? "rgba(212,175,55,0.3)" : "#e2e8f0",
+                          borderRadius: "0.5rem",
+                          color: isDark ? "#f5f3ef" : "#0f172a",
+                          fontSize: "0.85rem",
                         }}
-                        formatter={(val) => [formatCurrency(val), "Cost Valuation"]}
+                        formatter={(val) => [formatCurrency(val), "Cost Value"]}
                       />
-                      <Bar dataKey="cost_value" fill="#D4AF37" radius={[6, 6, 0, 0]} />
+                      <Bar dataKey="cost_value" fill="#d4af37" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-              </div>
+              </Card>
             </div>
           )}
 
           {/* ================= 4. OPERATING EXPENSES TAB ================= */}
           {activeTab === "expenses" && expensesData && (
-            <div className="space-y-8 animate-in fade-in duration-300">
-              {/* 4 KPI Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                <Tilt3D intensity={12}>
-                  <div className="card-3d p-5 rounded-2xl relative overflow-hidden">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">Total Outlay</span>
-                      <div className="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400">
-                        <Wallet size={20} />
-                      </div>
-                    </div>
-                    <div className="text-3xl font-black mt-3 text-rose-400 tracking-tight">
-                      {formatCurrency(expensesData.total_expenses)}
-                    </div>
-                    <div className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
-                      Total period expenditure
-                    </div>
-                  </div>
-                </Tilt3D>
-
-                <Tilt3D intensity={12}>
-                  <div className="card-3d p-5 rounded-2xl relative overflow-hidden">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">Vouchers Posted</span>
-                      <div className="w-10 h-10 rounded-xl bg-[#d4af37]/15 border border-[#d4af37]/30 flex items-center justify-center text-[#d4af37]">
-                        <FileText size={20} />
-                      </div>
-                    </div>
-                    <div className="text-3xl font-black mt-3 text-white tracking-tight">
-                      {expensesData.count || 0}
-                    </div>
-                    <div className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#d4af37]"></span>
-                      Recorded expense tickets
-                    </div>
-                  </div>
-                </Tilt3D>
-
-                <Tilt3D intensity={12}>
-                  <div className="card-3d p-5 rounded-2xl relative overflow-hidden">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">Primary Outlay Category</span>
-                      <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300">
-                        <BadgePercent size={20} />
-                      </div>
-                    </div>
-                    <div className="text-2xl font-black mt-3 text-amber-300 tracking-tight truncate">
-                      {expensesData.top_category || "None"}
-                    </div>
-                    <div className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                      Highest expenditure driver
-                    </div>
-                  </div>
-                </Tilt3D>
-
-                <Tilt3D intensity={12}>
-                  <div className="card-3d p-5 rounded-2xl relative overflow-hidden">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold tracking-wider uppercase text-neutral-400">Daily Average Outflow</span>
-                      <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400">
-                        <TrendingDown size={20} />
-                      </div>
-                    </div>
-                    <div className="text-3xl font-black mt-3 text-blue-300 tracking-tight">
-                      {formatCurrency(expensesData.daily_average)}
-                    </div>
-                    <div className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
-                      Mean daily cash burn
-                    </div>
-                  </div>
-                </Tilt3D>
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatsCard
+                  title="Total Outlay"
+                  value={formatCurrency(expensesData.total_expenses)}
+                  icon={Wallet}
+                  color="error"
+                  description="Period expenditure"
+                />
+                <StatsCard
+                  title="Vouchers Posted"
+                  value={expensesData.count || 0}
+                  icon={FileText}
+                  color="primary"
+                  description="Recorded disbursements"
+                />
+                <StatsCard
+                  title="Lead Cost Driver"
+                  value={expensesData.top_category || "None"}
+                  icon={BadgePercent}
+                  color="secondary"
+                  description="Primary category"
+                />
+                <StatsCard
+                  title="Daily Mean Outflow"
+                  value={formatCurrency(expensesData.daily_average)}
+                  icon={TrendingDown}
+                  color="error"
+                  description="Average daily cash burn"
+                />
               </div>
 
               {/* Expense Category Breakdown Chart */}
-              <div className="card-3d p-6 rounded-2xl border border-[#d4af37]/20">
-                <h3 className="text-base font-bold text-white mb-2 flex items-center gap-2">
-                  <BarChart3 size={18} className="text-[#d4af37]" />
-                  Category Outlay Comparison
-                </h3>
-                <div className="h-64 w-full mt-4">
+              <Card>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="font-bold text-base-content">Category Outlay Comparison</h3>
+                    <p className="text-xs text-base-content/60">Spending allocation across accounts</p>
+                  </div>
+                  <BarChart3 size={16} className="text-primary" />
+                </div>
+                <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={expensesData.category_breakdown || []} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(212, 175, 55, 0.1)" />
-                      <XAxis dataKey="category" stroke="#64748b" tick={{ fill: "#94a3b8", fontSize: 11 }} />
-                      <YAxis stroke="#64748b" tick={{ fill: "#94a3b8", fontSize: 11 }} />
+                    <BarChart data={expensesData.category_breakdown || []} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke={isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}
+                      />
+                      <XAxis
+                        dataKey="category"
+                        stroke={isDark ? "#a39d91" : "#64748b"}
+                        fontSize={11}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        stroke={isDark ? "#a39d91" : "#64748b"}
+                        fontSize={11}
+                        tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`}
+                        tickLine={false}
+                      />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: "#12141c",
-                          border: "1px solid rgba(212, 175, 55, 0.4)",
-                          borderRadius: "12px",
-                          color: "#fff",
+                          backgroundColor: isDark ? "#12141c" : "#ffffff",
+                          borderColor: isDark ? "rgba(212,175,55,0.3)" : "#e2e8f0",
+                          borderRadius: "0.5rem",
+                          color: isDark ? "#f5f3ef" : "#0f172a",
+                          fontSize: "0.85rem",
                         }}
                         formatter={(val) => [formatCurrency(val), "Outlay"]}
                       />
-                      <Bar dataKey="total" fill="#D4AF37" radius={[6, 6, 0, 0]} />
+                      <Bar dataKey="total" fill="#f59e0b" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-              </div>
+              </Card>
             </div>
           )}
         </>

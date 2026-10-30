@@ -2,10 +2,9 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Check, Eye, EyeOff, Lock, Mail, ShieldAlert, Sparkles, User } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import Scene3DBackground from "../components/3d/Scene3DBackground";
-import Tilt3D from "../components/3d/Tilt3D";
-import Button3D from "../components/3d/Button3D";
 import GoogleAuthButton from "../components/GoogleAuthButton";
+import ThemeToggle from "../components/ui/ThemeToggle";
+import { Button, Card, Input } from "../components/ui";
 
 export default function LoginPage() {
   const [identifier, setIdentifier] = useState("");
@@ -47,14 +46,14 @@ export default function LoginPage() {
       setLoginSuccess(true);
       setTimeout(() => {
         navigate(from, { replace: true });
-      }, 1250);
+      }, 1000);
     } catch (err) {
       let detail =
         err.response?.data?.detail ||
         err.response?.data?.errors?.detail;
       if (!detail) {
         if (!err.response) {
-          detail = "Cannot connect to server. Please verify the Django backend API is running on port 8000.";
+          detail = "Cannot connect to server. Please verify the backend API is running.";
         } else {
           detail = "Invalid username or password. Please try again.";
         }
@@ -78,7 +77,7 @@ export default function LoginPage() {
       setLoginSuccess(true);
       setTimeout(() => {
         navigate(from, { replace: true });
-      }, 1250);
+      }, 1000);
     } catch (err) {
       let detail =
         err.response?.data?.detail ||
@@ -90,323 +89,133 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="login-page-root min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden bg-[#070709] text-white">
-      <style>{`
-        .login-page-root {
-          min-height: 100vh;
-          width: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          position: relative;
-          overflow: hidden;
-          background: #070709;
-          color: #ffffff;
-          padding: 16px;
-          box-sizing: border-box;
-        }
-        .login-circle {
-          width: 440px;
-          max-width: 92vw;
-          aspect-ratio: 1 / 1;
-          border-radius: 50%;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 40px 32px;
-          position: relative;
-          box-sizing: border-box;
-          background: radial-gradient(circle at 35% 35%, #1a1d29 0%, #10121a 60%, #07080c 100%);
-          box-shadow: 25px 25px 65px rgba(0,0,0,0.95), -12px -12px 45px rgba(212,175,55,0.18), inset 2px 2px 4px rgba(255,235,170,0.35);
-          border: 2px solid rgba(212, 175, 55, 0.45);
-        }
-        .form-content {
-          width: 100%;
-          max-width: 310px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 14px;
-          z-index: 10;
-          box-sizing: border-box;
-        }
-        .form-content h2 {
-          margin: 0;
-          font-size: 28px;
-          font-weight: 900;
-          letter-spacing: 0.14em;
-          text-transform: uppercase;
-          background: linear-gradient(135deg, #fff2cc 0%, #d4af37 55%, #b38728 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          text-align: center;
-        }
-        .hint {
-          margin: 0;
-          font-size: 11px;
-          font-weight: 500;
-          letter-spacing: 0.05em;
-          color: rgba(212, 175, 55, 0.85);
-          text-align: center;
-        }
-        .check-circle {
-          width: 80px;
-          height: 80px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: radial-gradient(circle at 35% 35%, #181c24 0%, #0d0f15 100%);
-          box-shadow: inset 4px 4px 10px rgba(0,0,0,0.9), inset -3px -3px 8px rgba(212,175,55,0.2), 0 0 35px rgba(16,185,129,0.45);
-          border: 2.5px solid #10b981;
-          color: #10b981;
-        }
-        .success-msg {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
-          gap: 14px;
-          z-index: 10;
-        }
-        .success-msg h2 {
-          margin: 0;
-          font-size: 28px;
-          font-weight: 900;
-          background: linear-gradient(135deg, #ffffff 0%, #fef3c7 40%, #d4af37 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-        .success-msg p {
-          margin: 0;
-          font-size: 13px;
-          color: #d1d5db;
-          font-weight: 500;
-        }
-        .input-group {
-          width: 100%;
-          display: flex;
-          align-items: center;
-          background: #090a0f;
-          border-radius: 9999px;
-          padding: 8px 14px;
-          box-shadow: inset 3px 3px 8px rgba(0,0,0,0.95), inset -2px -2px 6px rgba(212,175,55,0.08);
-          border: 1px solid rgba(212, 175, 55, 0.3);
-          transition: all 0.2s ease;
-          box-sizing: border-box;
-        }
-        .input-group:focus-within {
-          border-color: rgba(212, 175, 55, 0.9);
-          box-shadow: inset 3px 3px 8px rgba(0,0,0,0.9), inset -2px -2px 6px rgba(212,175,55,0.15), 0 0 16px rgba(212,175,55,0.35);
-        }
-        .input-group input {
-          width: 100%;
-          background: transparent;
-          border: none;
-          outline: none;
-          color: #ffffff;
-          padding: 2px 8px;
-          font-size: 13px;
-          font-family: inherit;
-        }
-        .input-group input::placeholder {
-          color: #6b7280;
-        }
-        .btn-submit {
-          width: 100%;
-          padding: 11px 20px;
-          border-radius: 9999px;
-          border: none;
-          background: linear-gradient(135deg, #fce08b 0%, #d4af37 50%, #996515 100%);
-          box-shadow: 0 4px 0 #785310, 0 10px 25px rgba(212, 175, 55, 0.35);
-          font-weight: 900;
-          font-size: 12px;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: #0b0c10;
-          cursor: pointer;
-          transition: all 0.15s ease;
-          margin-top: 4px;
-        }
-        .btn-submit:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 0 #785310, 0 14px 30px rgba(212, 175, 55, 0.45);
-        }
-        .btn-submit:active:not(:disabled) {
-          transform: translateY(2px);
-          box-shadow: 0 2px 0 #785310, 0 6px 15px rgba(212, 175, 55, 0.3);
-        }
-      `}</style>
+    <div className="min-h-screen w-full flex items-center justify-center p-4 relative bg-base-200">
+      {/* Floating Theme Toggle */}
+      <div className="absolute top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
 
-      {/* Ambient Constellation Layer with Metallic Gold Particles */}
-      <Scene3DBackground opacity={0.35} particleCount={40} color="212, 175, 55" />
-
-      {/* Main Embossed Circle Plaque - Strictly Circular Movement */}
-      <Tilt3D
-        intensity={12}
-        glare={false}
-        float={true}
-        className="z-10 relative rounded-full"
-        style={{ borderRadius: "50%" }}
-      >
-        <div
-          id="loginContainer"
-          onAnimationEnd={() => setIsShaking(false)}
-          className={`login-circle preserve-3d relative transition-all duration-300 ${
-            isShaking
-              ? "animate-error-shake !border-rose-500 shadow-[0_0_45px_rgba(239,68,68,0.55),inset_0_0_20px_rgba(239,68,68,0.25)]"
-              : error
-              ? "!border-rose-500/70 shadow-[0_0_30px_rgba(239,68,68,0.35)]"
-              : ""
-          }`}
-        >
-          {/* Outer Concentric Metallic Rings */}
-          <div className="absolute inset-3.5 rounded-full border border-[#d4af37]/20 pointer-events-none" />
-          <div className="absolute inset-5 rounded-full border border-dashed border-[#d4af37]/20 pointer-events-none animate-[spin_80s_linear_infinite]" />
+      <div className="w-full max-w-md">
+        <Card className={`p-6 sm:p-8 border border-base-content/10 shadow-2xl bg-base-100 ${isShaking ? "animate-shake" : ""}`}>
+          {/* Logo & Header */}
+          <div className="text-center mb-6">
+            <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/30 flex items-center justify-center mx-auto mb-3 shadow-md">
+              <Sparkles className="w-7 h-7 text-primary" />
+            </div>
+            <h1 className="text-2xl font-black text-base-content tracking-tight">
+              Smart Inventory
+            </h1>
+            <p className="text-xs text-base-content/60 mt-1">
+              Enterprise Business Management & POS Suite
+            </p>
+          </div>
 
           {loginSuccess ? (
-            /* SUCCESS STATE - EXACT MATCH TO USER'S REEL IMAGE */
-            <div id="successMsg" className="success-msg flex flex-col items-center justify-center text-center space-y-4 animate-in fade-in zoom-in duration-300">
-              {/* Embossed circular well with green checkmark */}
-              <div className="check-circle w-20 h-20 rounded-full flex items-center justify-center text-emerald-400 text-3xl font-black shadow-lg">
-                <Check size={40} strokeWidth={3.5} className="text-emerald-400" />
+            <div className="py-8 text-center space-y-3 animate-in fade-in zoom-in duration-300">
+              <div className="w-16 h-16 rounded-full bg-success/15 border-2 border-success text-success flex items-center justify-center mx-auto shadow-lg">
+                <Check size={32} />
               </div>
-              <div className="space-y-1">
-                <h2 className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-white via-amber-100 to-[#d4af37] bg-clip-text text-transparent tracking-tight">
-                  Welcome Back!
-                </h2>
-                <p className="text-xs sm:text-sm text-neutral-300 font-medium tracking-wide">
-                  Login Successful
-                </p>
-              </div>
-              <span className="text-[11px] text-[#d4af37]/80 font-mono animate-pulse">
-                Entering Dashboard...
-              </span>
+              <h2 className="text-xl font-bold text-base-content">Access Authorized</h2>
+              <p className="text-xs text-base-content/60">
+                Initializing your operational workspace...
+              </p>
             </div>
           ) : (
-            /* FORM CONTENT STATE - EXACT MATCH TO CODE IN USER'S REEL */
-            <div id="formContent" className="form-content w-full max-w-[305px] flex flex-col items-center z-10 space-y-4">
-              <div className="text-center space-y-0.5">
-                <h2 className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-amber-100 via-[#d4af37] to-amber-500 bg-clip-text text-transparent tracking-widest uppercase">
-                  SIGN IN
-                </h2>
-                <p className="hint text-[11px] text-[#d4af37]/80 font-medium tracking-wide">
-                  Smart Business & Inventory
-                </p>
-              </div>
-
+            <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="w-full p-2.5 rounded-2xl bg-rose-500/20 border border-rose-500/50 text-rose-200 text-xs flex items-center gap-2.5 shadow-[0_0_20px_rgba(239,68,68,0.3)] animate-in fade-in zoom-in-95 duration-200">
-                  <ShieldAlert size={16} className="shrink-0 text-rose-400 animate-pulse" />
-                  <span className="font-semibold leading-tight text-left">{error}</span>
+                <div className="p-3 rounded-xl bg-error/10 border border-error/20 flex items-start gap-2.5 text-error text-xs">
+                  <ShieldAlert size={16} className="shrink-0 mt-0.5" />
+                  <span>{error}</span>
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="w-full space-y-3">
-                {/* Username Input Group */}
-                <div className={`input-group relative flex items-center rounded-full px-3.5 py-1.5 transition-colors ${
-                  error ? "!border-rose-500/60 shadow-[0_0_12px_rgba(239,68,68,0.2)]" : ""
-                }`}>
-                  <User size={14} className={`${error ? "text-rose-400" : "text-[#d4af37]/70"} shrink-0 ml-1`} />
+              <div>
+                <label className="label text-xs font-semibold text-base-content/70 pb-1">
+                  Username or Email
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-base-content/40 w-4 h-4" />
                   <input
                     type="text"
-                    id="username"
                     required
-                    placeholder="Username or Email"
+                    placeholder="admin or user@domain.com"
                     value={identifier}
-                    onChange={(e) => {
-                      setIdentifier(e.target.value);
-                      if (error) setError("");
-                    }}
-                    className="w-full bg-transparent border-none outline-none px-2.5 py-1.5 text-xs text-white placeholder-neutral-500 font-medium"
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    className="input input-bordered w-full pl-10 text-sm bg-base-100"
                   />
                 </div>
+              </div>
 
-                {/* Password Input Group */}
-                <div className={`input-group relative flex items-center rounded-full px-3.5 py-1.5 transition-colors ${
-                  error ? "!border-rose-500/60 shadow-[0_0_12px_rgba(239,68,68,0.2)]" : ""
-                }`}>
-                  <Lock size={14} className={`${error ? "text-rose-400" : "text-[#d4af37]/70"} shrink-0 ml-1`} />
+              <div>
+                <div className="flex justify-between items-center pb-1">
+                  <label className="label text-xs font-semibold text-base-content/70 p-0">
+                    Security Password
+                  </label>
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-base-content/40 w-4 h-4" />
                   <input
                     type={showPassword ? "text" : "password"}
-                    id="password"
                     required
-                    placeholder="Password"
+                    placeholder="••••••••"
                     value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      if (error) setError("");
-                    }}
-                    className="w-full bg-transparent border-none outline-none px-2.5 py-1.5 text-xs text-white placeholder-neutral-500 font-medium pr-7"
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="input input-bordered w-full pl-10 pr-10 text-sm bg-base-100 font-mono"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 text-neutral-400 hover:text-white"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/40 hover:text-base-content"
                   >
-                    {showPassword ? <EyeOff size={13} /> : <Eye size={13} />}
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
-
-                {/* Submit Button */}
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="btn-submit w-full py-2.5 rounded-full text-xs font-black text-black tracking-wider uppercase disabled:opacity-60 cursor-pointer"
-                >
-                  {submitting ? "Authenticating..." : "Login"}
-                </button>
-
-                {/* Divider */}
-                <div className="relative flex items-center justify-center w-full py-0.5">
-                  <div className="w-full border-t border-[#d4af37]/20" />
-                  <span className="absolute px-2.5 text-[9px] uppercase font-bold tracking-widest bg-[#12141c] text-[#d4af37]/75 rounded-full border border-[#d4af37]/15">
-                    OR
-                  </span>
-                </div>
-
-                {/* Google Sign-In with Official Google Symbol */}
-                <GoogleAuthButton
-                  disabled={submitting}
-                  onSuccess={() => {
-                    setLoginSuccess(true);
-                    setTimeout(() => {
-                      navigate(from, { replace: true });
-                    }, 1250);
-                  }}
-                  onError={(msg) => {
-                    setError(msg);
-                    triggerShake();
-                  }}
-                />
-
-                {/* 1-Click Live Guest Demo Access Button */}
-                <button
-                  type="button"
-                  id="guest-demo-btn"
-                  disabled={submitting}
-                  onClick={handleGuestDemo}
-                  className="w-full py-2 px-3 rounded-full text-xs font-bold text-amber-200 bg-gradient-to-r from-amber-500/15 via-[#d4af37]/25 to-amber-500/15 hover:from-amber-500/30 hover:via-[#d4af37]/40 hover:to-amber-500/30 border border-[#d4af37]/40 hover:border-[#d4af37] shadow-[0_0_12px_rgba(212,175,55,0.15)] hover:shadow-[0_0_20px_rgba(212,175,55,0.35)] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
-                  title="Explore all modules instantly with full executive demo privileges"
-                >
-                  <Sparkles size={13} className="text-[#d4af37] animate-pulse" />
-                  <span>Live Guest Demo</span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#d4af37]/30 text-amber-100 border border-[#d4af37]/40 font-mono">1-Click</span>
-                </button>
-              </form>
-
-              <div className="text-[11px] text-neutral-400 text-center">
-                Don't have an account?{" "}
-                <Link to="/register" className="text-[#d4af37] font-bold hover:underline">
-                  Sign Up
-                </Link>
               </div>
-            </div>
+
+              <Button
+                variant="primary"
+                type="submit"
+                className="w-full mt-2"
+                loading={submitting}
+              >
+                Sign In to Dashboard
+              </Button>
+
+              <div className="divider text-xs text-base-content/40 my-3">OR</div>
+
+              {/* 1-Click Guest Demo Button */}
+              <Button
+                variant="outline"
+                type="button"
+                className="w-full border-primary/40 text-primary hover:bg-primary hover:text-primary-content gap-2"
+                onClick={handleGuestDemo}
+                loading={submitting}
+              >
+                <Sparkles size={16} />
+                <span>1-Click Instant Guest Demo</span>
+              </Button>
+
+              {/* Google OAuth Button */}
+              <GoogleAuthButton
+                onSuccess={() => {
+                  setLoginSuccess(true);
+                  setTimeout(() => navigate(from, { replace: true }), 1000);
+                }}
+                onError={(err) => setError(err)}
+              />
+
+              <div className="text-center pt-2">
+                <span className="text-xs text-base-content/60">
+                  New to Smart Inventory?{" "}
+                  <Link to="/register" className="link link-primary font-bold">
+                    Create an account
+                  </Link>
+                </span>
+              </div>
+            </form>
           )}
-        </div>
-      </Tilt3D>
+        </Card>
+      </div>
     </div>
   );
 }
