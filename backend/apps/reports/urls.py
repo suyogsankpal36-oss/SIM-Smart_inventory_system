@@ -1,16 +1,16 @@
 from django.urls import path
-from .views import (
-    ExpensesReportView,
-    InventoryReportView,
-    ProfitLossReportView,
-    ReportExportView,
-    SalesReportView,
+from .controllers import (
+    ExpensesReportController,
+    InventoryReportController,
+    ProfitLossReportController,
+    ReportExportController,
+    SalesReportController,
 )
 
 urlpatterns = [
-    path("sales/", SalesReportView.as_view(), name="report-sales"),
-    path("inventory/", InventoryReportView.as_view(), name="report-inventory"),
-    path("expenses/", ExpensesReportView.as_view(), name="report-expenses"),
-    path("profit-loss/", ProfitLossReportView.as_view(), name="report-profit-loss"),
-    path("export/", ReportExportView.as_view(), name="report-export"),
+    path("sales/", SalesReportController.as_view(), name="report-sales"),
+    path("inventory/", InventoryReportController.as_view(), name="report-inventory"),
+    path("expenses/", ExpensesReportController.as_view(), name="report-expenses"),
+    path("profit-loss/", ProfitLossReportController.as_view(), name="report-profit-loss"),
+    path("export/", ReportExportController.as_view(), name="report-export"),
 ]

@@ -96,9 +96,10 @@ export default function GoogleAuthButton({
 
       // Display informative error or fallback modal for permission / configuration notices
       setShowModal(true);
+      const currentHost = window.location.hostname || "localhost";
       if (err.code === "auth/unauthorized-domain") {
         setModalError(
-          "Notice: In Firebase Console > Authentication > Settings, ensure 'localhost' is listed under Authorized domains. You can also sign in directly below:"
+          `Notice: Domain '${currentHost}' is not yet added to Firebase Console > Authentication > Settings > Authorized domains. You can add '${currentHost}' there for 1-click Google popups, or sign in directly below with your Google email:`
         );
       } else if (err.code === "auth/operation-not-allowed") {
         setModalError(

@@ -1,10 +1,10 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from .views import ActivityLogViewSet
+from .controllers import ActivityLogController
 
 router = DefaultRouter()
-router.register(r"", ActivityLogViewSet, basename="audit-log")
+router.register(r"", ActivityLogController, basename="audit-log")
 
 urlpatterns = [
     path("", include(router.urls)),

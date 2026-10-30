@@ -1,6 +1,6 @@
 from django.urls import path
-from .views import BusinessSettingsView
+from .controllers import BusinessSettingsController
 
 urlpatterns = [
-    path("", BusinessSettingsView.as_view(), name="business-settings"),
+    path("", BusinessSettingsController.as_view(), name="business-settings"),
 ]
